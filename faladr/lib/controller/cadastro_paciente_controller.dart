@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/paciente_model.dart';
-import '../models/plano_model.dart';
+import 'package:faladr_shared/faladr_shared.dart';
 import '../repositories/paciente_repository.dart';
 import '../controller/paciente_controller.dart';
 

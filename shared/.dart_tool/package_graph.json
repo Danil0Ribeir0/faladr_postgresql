@@ -1,0 +1,14 @@
+{
+  "roots": [
+    "faladr_shared"
+  ],
+  "packages": [
+    {
+      "name": "faladr_shared",
+      "version": "1.0.0",
+      "dependencies": [],
+      "devDependencies": []
+    }
+  ],
+  "configVersion": 1
+}

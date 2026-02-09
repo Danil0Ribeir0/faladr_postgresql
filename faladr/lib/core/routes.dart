@@ -1,8 +1,7 @@
 import 'package:go_router/go_router.dart';
 import '../views/dashboard_page.dart';
 import '../views/cadastro_medico_page.dart';
-import '../models/medico_model.dart';
-import '../models/paciente_model.dart';
+import 'package:faladr_shared/faladr_shared.dart';
 import '../views/cadastro_paciente_page.dart';
 
 final router = GoRouter(

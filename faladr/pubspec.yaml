@@ -9,6 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  faladr_shared:
+    path: ../shared
+
+  dio: ^5.7.0
 
   flutter_localizations:
     sdk: flutter
@@ -17,7 +21,6 @@ dependencies:
   flutter_dotenv: ^6.0.0
   flutter_riverpod: ^2.5.1
   go_router: ^17.1.0
-  supabase_flutter: ^2.12.0
   google_fonts: ^8.0.1
 
 dev_dependencies:

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/plano_model.dart';
-import '../models/medico_model.dart';
+import 'package:faladr_shared/faladr_shared.dart';
 import '../repositories/medico_repository.dart';
 
 final planosSelecionadosProvider = StateProvider.autoDispose<List<PlanoModel>>((ref) {

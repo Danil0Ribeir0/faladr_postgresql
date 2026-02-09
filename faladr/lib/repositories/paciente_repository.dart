@@ -1,7 +1,5 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/paciente_model.dart';
-import '../models/plano_model.dart';
+import 'package:faladr_shared/faladr_shared.dart';
 
 class PacienteRepository {
   final SupabaseClient _client = Supabase.instance.client;

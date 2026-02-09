@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/paciente_model.dart';
+import 'package:faladr_shared/faladr_shared.dart';
 import '../repositories/paciente_repository.dart';
 
 final listaPacientesProvider = FutureProvider<List<PacienteModel>>((ref) async {

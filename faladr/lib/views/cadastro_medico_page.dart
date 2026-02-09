@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/medico_model.dart';
-import '../../models/plano_model.dart';
+import 'package:faladr_shared/faladr_shared.dart';
 import '../../controller/cadastro_medico_controller.dart';
 import '../../controller/medico_controller.dart';
 import '../../controller/plano_controller.dart';
