@@ -6,7 +6,6 @@ Future<Response> onRequest(RequestContext context) async {
   final db = context.read<Connection>();
   final method = context.request.method;
 
-  // --- GET: Listar Pacientes ---
   if (method == HttpMethod.get) {
     try {
       final result = await db.execute(r'''

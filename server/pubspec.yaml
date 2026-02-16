@@ -11,3 +11,4 @@ dependencies:
   postgres: ^3.0.0
   faladr_shared:
     path: ../shared
+  dotenv: ^4.2.0
