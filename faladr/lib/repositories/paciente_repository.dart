@@ -1,80 +1,78 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
 
 class PacienteRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  // Se for testar no Android Emulator, use 'http://10.0.2.2:8080'
+  // Se for iOS ou Web, use 'http://localhost:8080'
+  final _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8080'));
 
+  // CREATE
   Future<void> criarPaciente(PacienteModel paciente) async {
     try {
-      final response = await _client.from('pacientes').insert({
-        'nome': paciente.nome,
-        'cpf': paciente.cpf,
-        'data_nascimento': paciente.dataNascimento.toIso8601String(),
-      }).select().single();
-
-      final novoIdPaciente = response['id'];
-
-      if (paciente.planos.isNotEmpty) {
-        await _vincularPlanos(novoIdPaciente, paciente.planos);
+      final response = await _dio.post(
+        '/pacientes',
+        data: paciente.toMap(),
+      );
+      
+      if (response.statusCode != 201) {
+        throw Exception('Erro ao cadastrar paciente');
       }
-    } catch (e) {
-      throw Exception('Erro ao criar paciente: $e');
+    } on DioException catch (e) {
+      throw Exception('Erro de rede ao cadastrar: ${e.message}');
     }
   }
 
+  // READ
   Future<List<PacienteModel>> getPacientes() async {
     try {
-      final response = await _client
-          .from('pacientes')
-          .select('*, planos(*)');
-
-      final data = response as List<dynamic>;
-      return data.map((json) => PacienteModel.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Erro ao buscar pacientes: $e');
+      final response = await _dio.get('/pacientes');
+      
+      if (response.statusCode == 200) {
+        final data = response.data as List;
+        // Usamos o fromMap que está no seu shared
+        return data.map((json) => PacienteModel.fromMap(json)).toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception('Erro ao buscar pacientes: ${e.message}');
     }
   }
 
+  // UPDATE
   Future<void> atualizarPaciente(PacienteModel paciente) async {
     if (paciente.id == null) throw Exception('ID necessário para atualizar');
 
     try {
-      await _client.from('pacientes').update({
-        'nome': paciente.nome,
-        'cpf': paciente.cpf,
-        'data_nascimento': paciente.dataNascimento.toIso8601String(),
-      }).eq('id', paciente.id!);
+      // Passamos o ID na URL (padrão REST)
+      final response = await _dio.put(
+        '/pacientes/${paciente.id}',
+        data: paciente.toMap(),
+      );
 
-      await _client.from('paciente_planos').delete().eq('paciente_id', paciente.id!);
-
-      if (paciente.planos.isNotEmpty) {
-        await _vincularPlanos(paciente.id!, paciente.planos);
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao atualizar paciente');
       }
-    } catch (e) {
-      throw Exception('Erro ao atualizar paciente: $e');
+    } on DioException catch (e) {
+      throw Exception('Erro de rede ao atualizar: ${e.message}');
     }
   }
 
+  // DELETE
   Future<void> deletarPaciente(String id) async {
     try {
-      await _client.from('pacientes').delete().eq('id', id);
-    } catch (e) {
-      throw Exception('Erro ao deletar paciente: $e');
+      final response = await _dio.delete('/pacientes/$id');
+      
+      if (response.statusCode != 204 && response.statusCode != 200) {
+        throw Exception('Erro ao deletar paciente');
+      }
+    } on DioException catch (e) {
+      throw Exception('Erro de rede ao deletar: ${e.message}');
     }
-  }
-
-  Future<void> _vincularPlanos(String pacienteId, List<PlanoModel> planos) async {
-    final listaParaInserir = planos.map((plano) {
-      return {
-        'paciente_id': pacienteId,
-        'plano_id': plano.id,
-      };
-    }).toList();
-
-    await _client.from('paciente_planos').insert(listaParaInserir);
   }
 }
 
+// Provedor para o Riverpod
 final pacienteRepositoryProvider = Provider<PacienteRepository>((ref) {
   return PacienteRepository();
 });

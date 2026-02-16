@@ -17,26 +17,35 @@ class MedicoModel {
     required this.planos,
   });
 
-  factory MedicoModel.fromJson(Map<String, dynamic> json) {
+  factory MedicoModel.fromMap(Map<String, dynamic> map) {
     return MedicoModel(
-      id: json['id'],
-      nome: json['nome'],
-      crm: json['crm'],
-      cpf: json['cpf'],
-      dataNascimento: DateTime.parse(json['data_nascimento']),
-      
-      planos: json['planos'] != null 
-          ? (json['planos'] as List).map((e) => PlanoModel.fromJson(e)).toList()
+      id: map['id']?.toString(),
+      nome: map['nome'] ?? '',
+      crm: map['crm'] ?? '',
+      cpf: map['cpf'] ?? '',
+      dataNascimento: map['data_nascimento'] != null
+          ? DateTime.parse(map['data_nascimento'].toString())
+          : DateTime.now(),
+      planos: map['planos'] != null
+          ? (map['planos'] as List)
+              .map((e) => PlanoModel.fromMap(e as Map<String, dynamic>))
+              .toList()
           : [],
     );
   }
 
-  Map<String, dynamic> toJson() {
+  factory MedicoModel.fromJson(Map<String, dynamic> json) => MedicoModel.fromMap(json);
+
+  Map<String, dynamic> toMap() {
     return {
+      if (id != null) 'id': id,
       'nome': nome,
       'crm': crm,
       'cpf': cpf,
-      'data_nascimento': dataNascimento.toIso8601String(),
+      'data_nascimento': dataNascimento.toIso8601String().split('T')[0],
+      'planos': planos.map((x) => x.toMap()).toList(),
     };
   }
+
+  Map<String, dynamic> toJson() => toMap();
 }

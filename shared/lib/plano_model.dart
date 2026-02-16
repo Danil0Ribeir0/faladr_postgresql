@@ -1,5 +1,5 @@
 class PlanoModel {
-  final int? id;
+  final String? id;
   final String nome;
 
   PlanoModel({
@@ -7,17 +7,21 @@ class PlanoModel {
     required this.nome,
   });
 
-  factory PlanoModel.fromJson(Map<String, dynamic> json) {
+  factory PlanoModel.fromMap(Map<String, dynamic> map) {
     return PlanoModel(
-      id: json["id"],
-      nome: json["nome"],
+      id: map['id']?.toString(),
+      nome: map['nome'] ?? '',
     );
   }
 
-  Map<String, dynamic> toJson() {
+  factory PlanoModel.fromJson(Map<String, dynamic> json) => PlanoModel.fromMap(json);
+
+  Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id' : id,
-      'nome': nome
+      if (id != null) 'id': id,
+      'nome': nome,
     };
   }
+
+  Map<String, dynamic> toJson() => toMap();
 }
