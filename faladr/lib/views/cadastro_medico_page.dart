@@ -114,8 +114,18 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
   Future<void> _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final planosSelecionados = ref.read(planosSelecionadosProvider);
+    if (planosSelecionados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, selecione pelo menos 1 plano de saúde.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final dataParaBanco = _converterDataParaIso(_dataController.text);
-    
     final crmFinal = '${_crmNumeroController.text}/$_ufSelecionada';
 
     try {
@@ -127,6 +137,7 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
           crm: crmFinal,
           cpf: _cpfController.text,
           dataNascimento: dataParaBanco,
+          planos: planosSelecionados,
         );
       } else {
         await cadastrarMedico(
@@ -135,6 +146,7 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
           crm: crmFinal,
           cpf: _cpfController.text,
           dataNascimento: dataParaBanco,
+          planos: planosSelecionados,
         );
       }
 
@@ -151,7 +163,7 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
         );
       }
     }

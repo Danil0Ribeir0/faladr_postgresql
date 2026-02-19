@@ -45,6 +45,13 @@ Future<Response> onRequest(RequestContext context) async {
       final json = await context.request.json() as Map<String, dynamic>;
       final medico = MedicoModel.fromMap(json);
 
+      if (medico.planos.isEmpty) {
+        return Response.json(
+          statusCode: 400, 
+          body: {'error': 'O médico deve ter pelo menos 1 plano vinculado.'}
+        );
+      }
+
       if (medico.planos.length > 3) {
         return Response.json(
           statusCode: 400, 

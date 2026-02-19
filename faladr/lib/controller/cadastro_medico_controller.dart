@@ -14,13 +14,11 @@ Future<bool> cadastrarMedico({
   required String crm,
   required String cpf,
   required String dataNascimento,
+  required List<PlanoModel> planos,
 }) async {
   
-  final planos = ref.read(planosSelecionadosProvider);
-
-  if (planos.length > 3) {
-    throw Exception('Selecione no máximo 3 planos de saúde.');
-  }
+  if (planos.isEmpty) throw Exception('Selecione pelo menos 1 plano de saúde.');
+  if (planos.length > 3) throw Exception('Selecione no máximo 3 planos de saúde.');
 
   ref.read(cadastrandoProvider.notifier).state = true;
 
@@ -52,8 +50,12 @@ Future<void> editarMedico({
   required String crm,
   required String cpf,
   required String dataNascimento,
+  required List<PlanoModel> planos,
 }) async {
   
+  if (planos.isEmpty) throw Exception('Selecione pelo menos 1 plano de saúde.');
+  if (planos.length > 3) throw Exception('Selecione no máximo 3 planos de saúde.');
+
   ref.read(cadastrandoProvider.notifier).state = true;
 
   try {
@@ -65,7 +67,7 @@ Future<void> editarMedico({
       crm: crm,
       cpf: cpf,
       dataNascimento: DateTime.parse(dataNascimento),
-      planos: [],
+      planos: planos,
     );
 
     await repository.atualizarMedico(medicoEditado);
