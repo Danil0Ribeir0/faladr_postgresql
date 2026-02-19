@@ -5,7 +5,7 @@ import 'package:faladr_shared/faladr_shared.dart';
 import '../../controller/cadastro_paciente_controller.dart';
 import '../../controller/plano_controller.dart';
 
-final planosSelecionadosProvider = StateProvider<List<PlanoModel>>((ref) => []);
+final planoSelecionadoProvider = StateProvider<PlanoModel?>((ref) => null);
 
 class CadastroPacientePage extends ConsumerStatefulWidget {
   final PacienteModel? pacienteParaEditar;
@@ -19,12 +19,10 @@ class CadastroPacientePage extends ConsumerStatefulWidget {
 class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
   final _formKey = GlobalKey<FormState>();
   
-  // Controladores de Texto
   final _nomeController = TextEditingController();
   final _cpfController = TextEditingController();
   final _dataController = TextEditingController();
 
-  // Helper para saber se é Edição
   bool get _editando => widget.pacienteParaEditar != null;
 
   @override
@@ -36,7 +34,6 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
       _nomeController.text = p.nome;
       _cpfController.text = p.cpf;
 
-      // CONVERSÃO DATA: Banco (YYYY-MM-DD) -> Tela (DD/MM/AAAA)
       try {
         final dataIso = p.dataNascimento.toString().split(' ')[0];
         final partes = dataIso.split('-');
@@ -45,14 +42,12 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
         _dataController.text = "";
       }
 
-      // Preenche os planos que o paciente já tem
       Future.microtask(() {
-        ref.read(planosSelecionadosProvider.notifier).state = p.planos;
+        ref.read(planoSelecionadoProvider.notifier).state = p.plano;
       });
     } else {
-      // Se for novo, limpa a seleção de planos
       Future.microtask(() {
-        ref.read(planosSelecionadosProvider.notifier).state = [];
+        ref.read(planoSelecionadoProvider.notifier).state = null;
       });
     }
   }
@@ -65,14 +60,13 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
     super.dispose();
   }
 
-  // Lógica do Calendário
   Future<void> _selecionarData() async {
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(1900), // Ninguém nasceu antes de 1900
+      firstDate: DateTime(1900), 
       lastDate: DateTime.now(),
-      locale: const Locale('pt', 'BR'), // Calendário em Português
+      locale: const Locale('pt', 'BR'), 
     );
 
     if (picked != null) {
@@ -85,7 +79,6 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
     }
   }
 
-  // Helper: Tela (DD/MM/AAAA) -> Banco (YYYY-MM-DD)
   String _converterDataParaIso(String dataBr) {
     try {
       final partes = dataBr.split('/');
@@ -95,22 +88,31 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
     }
   }
 
-  // Ação de Salvar
   Future<void> _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final planoSelecionado = ref.read(planoSelecionadoProvider);
+    
+    if (planoSelecionado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, selecione um plano de saúde.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final dataParaBanco = _converterDataParaIso(_dataController.text);
-    final planosSelecionados = ref.read(planosSelecionadosProvider);
 
     try {
-      // Chama a função global do Controller de Cadastro
       await salvarPaciente(
         ref: ref,
         id: widget.pacienteParaEditar?.id,
         nome: _nomeController.text,
         cpf: _cpfController.text,
         dataNascimento: dataParaBanco,
-        planos: planosSelecionados,
+        plano: planoSelecionado,
       );
 
       if (mounted) {
@@ -131,7 +133,6 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
     }
   }
 
-  // Ação de Deletar
   Future<void> _onDelete() async {
     final confirmou = await showDialog<bool>(
       context: context,
@@ -171,25 +172,17 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
     }
   }
 
-  // Lógica dos Chips de Planos
   void _togglePlano(PlanoModel plano, bool selecionado) {
-    final atual = ref.read(planosSelecionadosProvider);
-    final novo = [...atual]; // Cria cópia da lista
     if (selecionado) {
-      novo.add(plano);
+      ref.read(planoSelecionadoProvider.notifier).state = plano;
     } else {
-      novo.removeWhere((p) => p.id == plano.id);
+      ref.read(planoSelecionadoProvider.notifier).state = null;
     }
-    
-    ref.read(planosSelecionadosProvider.notifier).state = novo;
   }
 
   @override
   Widget build(BuildContext context) {
-    // Escuta o estado de loading do Controller
     final isLoading = ref.watch(cadastrandoPacienteProvider);
-    
-    // Escuta a lista de planos disponíveis
     final listaPlanosAsync = ref.watch(listaPlanosProvider);
 
     return Scaffold(
@@ -209,7 +202,6 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
           key: _formKey,
           child: Column(
             children: [
-              // 1. NOME
               TextFormField(
                 controller: _nomeController,
                 decoration: const InputDecoration(labelText: 'Nome Completo', border: OutlineInputBorder()),
@@ -217,7 +209,6 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
               ),
               const SizedBox(height: 16),
               
-              // 2. CPF BLINDADO (Igual ao do Médico)
               TextFormField(
                 controller: _cpfController,
                 decoration: const InputDecoration(
@@ -226,8 +217,8 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
                   counterText: "",
                 ),
                 keyboardType: TextInputType.number,
-                maxLength: 11, // Trava no 11º dígito
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Só aceita números
+                maxLength: 11,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly], 
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Campo obrigatório';
                   if (v.length != 11) return 'CPF deve ter 11 dígitos';
@@ -236,11 +227,10 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
               ),
               const SizedBox(height: 16),
               
-              // 3. DATA COM CALENDÁRIO
               TextFormField(
                 controller: _dataController,
-                readOnly: true, // Bloqueia digitação manual
-                onTap: _selecionarData, // Abre calendário
+                readOnly: true, 
+                onTap: _selecionarData, 
                 decoration: const InputDecoration(
                   labelText: 'Data Nascimento',
                   hintText: 'DD/MM/AAAA',
@@ -251,10 +241,9 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
               ),
               const SizedBox(height: 24),
               
-              // 4. PLANOS DE SAÚDE
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Planos de Saúde', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('Plano de Saúde *', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 8),
               
@@ -262,12 +251,13 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
                 loading: () => const LinearProgressIndicator(),
                 error: (err, stack) => Text('Erro ao carregar planos: $err'),
                 data: (planosDisponiveis) {
-                  final selecionados = ref.watch(planosSelecionadosProvider);
+                  final planoAtual = ref.watch(planoSelecionadoProvider);
                   return Wrap(
                     spacing: 8.0,
                     children: planosDisponiveis.map((plano) {
-                      final isSelected = selecionados.any((p) => p.id == plano.id);
-                      return FilterChip(
+                      final isSelected = planoAtual?.id == plano.id;
+                      
+                      return ChoiceChip(
                         label: Text(plano.nome),
                         selected: isSelected,
                         onSelected: (bool selected) => _togglePlano(plano, selected),
@@ -279,7 +269,6 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
 
               const SizedBox(height: 32),
               
-              // BOTÃO SALVAR
               SizedBox(
                 width: double.infinity,
                 height: 50,

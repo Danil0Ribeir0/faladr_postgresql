@@ -43,7 +43,7 @@ Future<Response> onRequest(RequestContext context) async {
           paciente.nome,
           paciente.cpf,
           paciente.dataNascimento,
-          paciente.plano?.id,
+          paciente.plano.id,
         ],
       );
 

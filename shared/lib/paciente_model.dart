@@ -5,14 +5,14 @@ class PacienteModel {
   final String nome;
   final String cpf;
   final DateTime dataNascimento;
-  final PlanoModel? plano;
+  final PlanoModel plano;
 
   PacienteModel({
     this.id,
     required this.nome,
     required this.cpf,
     required this.dataNascimento,
-    this.plano,
+    required this.plano,
   });
 
   factory PacienteModel.fromMap(Map<String, dynamic> map) {
@@ -23,9 +23,7 @@ class PacienteModel {
       dataNascimento: map['data_nascimento'] != null
           ? DateTime.parse(map['data_nascimento'].toString())
           : DateTime.now(),
-      plano: map['plano'] != null 
-          ? PlanoModel.fromMap(map['plano'] as Map<String, dynamic>) 
-          : null,
+      plano: PlanoModel.fromMap(map['plano'] as Map<String, dynamic>),
     );
   }
 
@@ -37,7 +35,7 @@ class PacienteModel {
       'nome': nome,
       'cpf': cpf,
       'data_nascimento': dataNascimento.toIso8601String().split('T')[0],
-      if (plano != null) 'plano': plano!.toMap(),
+      'plano': plano.toMap(),
     };
   }
 

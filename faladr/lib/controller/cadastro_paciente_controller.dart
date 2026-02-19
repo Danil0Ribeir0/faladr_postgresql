@@ -11,7 +11,7 @@ Future<void> salvarPaciente({
   required String nome,
   required String cpf,
   required String dataNascimento,
-  PlanoModel? plano,
+  required PlanoModel plano,
 }) async {
   
   ref.read(cadastrandoPacienteProvider.notifier).state = true;
