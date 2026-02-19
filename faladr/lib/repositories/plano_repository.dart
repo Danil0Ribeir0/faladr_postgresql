@@ -1,20 +1,52 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
+import '../core/api_config.dart';
 
 class PlanoRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  final _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
 
   Future<List<PlanoModel>> getPlanos() async {
     try {
-      final response = await _client
-          .from('planos')
-          .select()
-          .order('nome', ascending: true);
+      final response = await _dio.get('/planos');
+      
+      if (response.statusCode == 200) {
+        final data = response.data as List;
+        return data.map((json) => PlanoModel.fromMap(json)).toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception('Erro ao buscar planos: ${e.message}');
+    }
+  }
 
-      final data = response as List<dynamic>;
-      return data.map((json) => PlanoModel.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Erro ao buscar lista de planos: $e');
+  Future<void> criarPlano(PlanoModel plano) async {
+    try {
+      final response = await _dio.post('/planos', data: plano.toMap());
+      if (response.statusCode != 201) throw Exception('Erro ao criar plano');
+    } on DioException catch (e) {
+      throw Exception('Erro de rede: ${e.message}');
+    }
+  }
+
+  Future<void> atualizarPlano(PlanoModel plano) async {
+    if (plano.id == null) throw Exception('ID necessário para atualizar');
+    try {
+      final response = await _dio.put('/planos/${plano.id}', data: plano.toMap());
+      if (response.statusCode != 200) throw Exception('Erro ao atualizar plano');
+    } on DioException catch (e) {
+      throw Exception('Erro de rede: ${e.message}');
+    }
+  }
+
+  Future<void> deletarPlano(String id) async {
+    try {
+      final response = await _dio.delete('/planos/$id');
+      if (response.statusCode != 204 && response.statusCode != 200) {
+        throw Exception('Erro ao deletar plano');
+      }
+    } on DioException catch (e) {
+      throw Exception('Erro de rede: ${e.message}');
     }
   }
 }

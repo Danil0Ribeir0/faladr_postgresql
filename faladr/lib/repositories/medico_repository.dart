@@ -1,40 +1,37 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
+import '../core/api_config.dart';
 
 class MedicoRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  final _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
 
   Future<void> criarMedico(MedicoModel medico) async {
     try {
-      final response = await _client.from('medicos').insert({
-        'nome': medico.nome,
-        'crm': medico.crm,
-        'cpf': medico.cpf,
-        'data_nascimento': medico.dataNascimento.toIso8601String(),
-      }).select().single();
-
-      final novoIdMedico = response['id'];
-
-      if (medico.planos.isNotEmpty) {
-        await _vincularPlanos(novoIdMedico, medico.planos);
-      }
+      final response = await _dio.post('/medicos', data: medico.toMap());
       
-    } catch (e) {
-      throw Exception('Erro ao criar médico: $e');
+      if (response.statusCode != 201) {
+        throw Exception('Erro ao cadastrar médico');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        throw Exception('CRM ou CPF já cadastrado.');
+      }
+      throw Exception('Erro de rede ao cadastrar médico: ${e.message}');
     }
   }
 
   Future<List<MedicoModel>> getMedicos() async {
     try {
-      final response = await _client
-          .from('medicos')
-          .select('*, planos(*)'); 
-
-      final data = response as List<dynamic>;
-      return data.map((json) => MedicoModel.fromJson(json)).toList();
+      final response = await _dio.get('/medicos');
       
-    } catch (e) {
-      throw Exception('Erro ao buscar médicos: $e');
+      if (response.statusCode == 200) {
+        final data = response.data as List;
+        return data.map((json) => MedicoModel.fromMap(json)).toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception('Erro ao buscar médicos: ${e.message}');
     }
   }
 
@@ -42,41 +39,35 @@ class MedicoRepository {
     if (medico.id == null) throw Exception('ID é obrigatório para atualização');
 
     try {
-      await _client.from('medicos').update({
-        'nome': medico.nome,
-        'crm': medico.crm,
-        'cpf': medico.cpf,
-        'data_nascimento': medico.dataNascimento.toIso8601String(),
-      }).eq('id', medico.id!);
+      final response = await _dio.put(
+        '/medicos/${medico.id}',
+        data: medico.toMap(),
+      );
 
-      await _client.from('medico_planos').delete().eq('medico_id', medico.id!);
-      
-      if (medico.planos.isNotEmpty) {
-        await _vincularPlanos(medico.id!, medico.planos);
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao atualizar médico');
       }
-
-    } catch (e) {
-      throw Exception('Erro ao atualizar médico: $e');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Médico não encontrado.');
+      }
+      if (e.response?.statusCode == 409) {
+        throw Exception('CRM ou CPF já utilizado por outro médico.');
+      }
+      throw Exception('Erro de rede ao atualizar médico: ${e.message}');
     }
   }
 
   Future<void> deletarMedico(String id) async {
     try {
-      await _client.from('medicos').delete().eq('id', id);
-    } catch (e) {
-      throw Exception('Erro ao deletar médico: $e');
+      final response = await _dio.delete('/medicos/$id');
+      
+      if (response.statusCode != 204 && response.statusCode != 200) {
+        throw Exception('Erro ao deletar médico');
+      }
+    } on DioException catch (e) {
+      throw Exception('Erro de rede ao deletar médico: ${e.message}');
     }
-  }
-
-  Future<void> _vincularPlanos(String medicoId, List<PlanoModel> planos) async {
-    final listaParaInserir = planos.map((plano) {
-      return {
-        'medico_id': medicoId,
-        'plano_id': plano.id,
-      };
-    }).toList();
-
-    await _client.from('medico_planos').insert(listaParaInserir);
   }
 }
 
