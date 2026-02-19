@@ -6,10 +6,19 @@ final env = DotEnv(includePlatformEnvironment: true)..load();
 
 Connection? _db;
 
+const _corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+};
+
 Handler middleware(Handler handler) {
   return (context) async {
+    if (context.request.method == HttpMethod.options) {
+      return Response(statusCode: 204, headers: _corsHeaders);
+    }
+
     if (_db == null || !_db!.isOpen) {
-      
       _db = await Connection.open(
         Endpoint(
           host: env['DB_HOST'] ?? 'localhost',
@@ -21,8 +30,15 @@ Handler middleware(Handler handler) {
       );
     }
 
-    return handler(
+    final response = await handler(
       context.provide<Connection>(() => _db!),
+    );
+
+    return response.copyWith(
+      headers: {
+        ...response.headers,
+        ..._corsHeaders,
+      },
     );
   };
 }
