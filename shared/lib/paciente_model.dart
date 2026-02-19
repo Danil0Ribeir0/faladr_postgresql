@@ -5,14 +5,14 @@ class PacienteModel {
   final String nome;
   final String cpf;
   final DateTime dataNascimento;
-  final List<PlanoModel> planos;
+  final PlanoModel? plano;
 
   PacienteModel({
     this.id,
     required this.nome,
     required this.cpf,
     required this.dataNascimento,
-    required this.planos,
+    this.plano,
   });
 
   factory PacienteModel.fromMap(Map<String, dynamic> map) {
@@ -23,11 +23,9 @@ class PacienteModel {
       dataNascimento: map['data_nascimento'] != null
           ? DateTime.parse(map['data_nascimento'].toString())
           : DateTime.now(),
-      planos: map['planos'] != null
-          ? (map['planos'] as List)
-              .map((e) => PlanoModel.fromMap(e as Map<String, dynamic>))
-              .toList()
-          : [],
+      plano: map['plano'] != null 
+          ? PlanoModel.fromMap(map['plano'] as Map<String, dynamic>) 
+          : null,
     );
   }
 
@@ -39,7 +37,7 @@ class PacienteModel {
       'nome': nome,
       'cpf': cpf,
       'data_nascimento': dataNascimento.toIso8601String().split('T')[0],
-      'planos': planos.map((x) => x.toMap()).toList(),
+      if (plano != null) 'plano': plano!.toMap(),
     };
   }
 
