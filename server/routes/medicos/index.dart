@@ -80,7 +80,10 @@ Future<Response> onRequest(RequestContext context) async {
       return Response.json(statusCode: 201, body: {'message': 'Médico cadastrado com sucesso!'});
     } catch (e) {
       if (e.toString().contains('unique constraint')) {
-        return Response.json(statusCode: 409, body: {'error': 'CRM ou CPF já cadastrado.'});
+        return Response.json(
+          statusCode: 409, 
+          body: {'error': 'Já existe um médico cadastrado com este CPF ou CRM no sistema. Por favor, verifique os dados informados.'}
+        );
       }
       return Response.json(statusCode: 400, body: {'error': 'Erro ao salvar médico: $e'});
     }

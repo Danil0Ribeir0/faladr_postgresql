@@ -6,6 +6,23 @@ import '../core/api_config.dart';
 class MedicoRepository {
   final _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
 
+  String _extrairErroBackend(DioException e, String mensagemPadrao) {
+    try {
+      if (e.response?.data != null && e.response?.data is Map) {
+        final mensagem = e.response?.data['error'];
+        if (mensagem != null && mensagem.toString().isNotEmpty) {
+          return mensagem;
+        }
+      }
+    } catch (_) {
+    }
+    
+    if (e.response?.statusCode == 409) return 'CRM ou CPF já cadastrado.';
+    if (e.response?.statusCode == 404) return 'Registro não encontrado.';
+    
+    return mensagemPadrao;
+  }
+
   Future<void> criarMedico(MedicoModel medico) async {
     try {
       final response = await _dio.post('/medicos', data: medico.toMap());
@@ -14,10 +31,7 @@ class MedicoRepository {
         throw Exception('Erro ao cadastrar médico');
       }
     } on DioException catch (e) {
-      if (e.response?.statusCode == 409) {
-        throw Exception('CRM ou CPF já cadastrado.');
-      }
-      throw Exception('Erro de rede ao cadastrar médico: ${e.message}');
+      throw Exception(_extrairErroBackend(e, 'Erro de rede ao cadastrar médico: ${e.message}'));
     }
   }
 
@@ -31,7 +45,7 @@ class MedicoRepository {
       }
       return [];
     } on DioException catch (e) {
-      throw Exception('Erro ao buscar médicos: ${e.message}');
+      throw Exception(_extrairErroBackend(e, 'Erro ao buscar médicos: ${e.message}'));
     }
   }
 
@@ -48,13 +62,7 @@ class MedicoRepository {
         throw Exception('Erro ao atualizar médico');
       }
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        throw Exception('Médico não encontrado.');
-      }
-      if (e.response?.statusCode == 409) {
-        throw Exception('CRM ou CPF já utilizado por outro médico.');
-      }
-      throw Exception('Erro de rede ao atualizar médico: ${e.message}');
+      throw Exception(_extrairErroBackend(e, 'Erro de rede ao atualizar médico: ${e.message}'));
     }
   }
 
@@ -66,7 +74,7 @@ class MedicoRepository {
         throw Exception('Erro ao deletar médico');
       }
     } on DioException catch (e) {
-      throw Exception('Erro de rede ao deletar médico: ${e.message}');
+      throw Exception(_extrairErroBackend(e, 'Erro de rede ao deletar médico: ${e.message}'));
     }
   }
 }

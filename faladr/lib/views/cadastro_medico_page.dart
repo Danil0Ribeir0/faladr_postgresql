@@ -209,21 +209,81 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
     }
   }
 
-  void _togglePlano(PlanoModel plano, bool selecionado) {
-    final listaAtual = ref.read(planosSelecionadosProvider);
-    List<PlanoModel> novaLista = [...listaAtual];
-    if (selecionado) {
-      novaLista.add(plano);
-    } else {
-      novaLista.removeWhere((p) => p.id == plano.id);
-    }
-    ref.read(planosSelecionadosProvider.notifier).state = novaLista;
+  Future<void> _mostrarDialogSelecaoPlanos(BuildContext context, WidgetRef ref) async {
+    final todosOsPlanos = ref.read(listaPlanosProvider).value ?? [];
+    
+    final selecionadosAtuais = ref.read(planosSelecionadosProvider);
+    
+    List<PlanoModel> selecaoTemporaria = List.from(selecionadosAtuais);
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateModal) {
+            return AlertDialog(
+              title: const Text('Selecione até 3 planos'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: todosOsPlanos.isEmpty 
+                  ? const Text('Nenhum plano cadastrado no sistema.')
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: todosOsPlanos.length,
+                      itemBuilder: (context, index) {
+                        final plano = todosOsPlanos[index];
+                        final isSelecionado = selecaoTemporaria.any((p) => p.id == plano.id);
+
+                        return CheckboxListTile(
+                          title: Text(plano.nome),
+                          value: isSelecionado,
+                          activeColor: Colors.teal,
+                          onChanged: (bool? checked) {
+                            setStateModal(() {
+                              if (checked == true) {
+                                if (selecaoTemporaria.length < 3) {
+                                  selecaoTemporaria.add(plano);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Limite máximo de 3 planos atingido!'),
+                                      backgroundColor: Colors.orange,
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                selecaoTemporaria.removeWhere((p) => p.id == plano.id);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context), 
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    ref.read(planosSelecionadosProvider.notifier).state = selecaoTemporaria;
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Confirmar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(cadastrandoProvider);
-    final listaPlanosAsync = ref.watch(listaPlanosProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -335,27 +395,32 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
               ),
               const SizedBox(height: 24),
               
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Selecione os Planos (Máx: 3)', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 8),
-              
-              listaPlanosAsync.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (err, stack) => Text('Erro: $err'),
-                data: (planosDisponiveis) {
+              Consumer(
+                builder: (context, ref, child) {
                   final selecionados = ref.watch(planosSelecionadosProvider);
-                  return Wrap(
-                    spacing: 8.0,
-                    children: planosDisponiveis.map((plano) {
-                      final isSelected = selecionados.any((p) => p.id == plano.id);
-                      return FilterChip(
-                        label: Text(plano.nome),
-                        selected: isSelected,
-                        onSelected: (bool selected) => _togglePlano(plano, selected),
-                      );
-                    }).toList(),
+                  
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(4), // Igual ao OutlineInputBorder
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      leading: const Icon(Icons.medical_information, color: Colors.teal),
+                      title: const Text('Planos de Saúde (Máx: 3)'),
+                      subtitle: Text(
+                        selecionados.isEmpty 
+                          ? 'Nenhum plano selecionado' 
+                          : '${selecionados.length} plano(s) selecionado(s) - Toque para alterar',
+                        style: TextStyle(
+                          color: selecionados.isEmpty ? Colors.red.shade700 : Colors.grey.shade700,
+                          fontWeight: selecionados.isEmpty ? FontWeight.w500 : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () => _mostrarDialogSelecaoPlanos(context, ref),
+                    ),
                   );
                 },
               ),
