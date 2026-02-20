@@ -14,10 +14,9 @@ class MedicoRepository {
           return mensagem;
         }
       }
-    } catch (_) {
-    }
+    } catch (_) {}
     
-    if (e.response?.statusCode == 409) return 'CRM ou CPF já cadastrado.';
+    if (e.response?.statusCode == 409) return 'Já existe um médico cadastrado com este CPF ou CRM. Verifique os dados.';
     if (e.response?.statusCode == 404) return 'Registro não encontrado.';
     
     return mensagemPadrao;
