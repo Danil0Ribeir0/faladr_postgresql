@@ -172,18 +172,67 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
     }
   }
 
-  void _togglePlano(PlanoModel plano, bool selecionado) {
-    if (selecionado) {
-      ref.read(planoSelecionadoProvider.notifier).state = plano;
-    } else {
-      ref.read(planoSelecionadoProvider.notifier).state = null;
-    }
+  Future<void> _mostrarDialogSelecaoPlano(BuildContext context, WidgetRef ref) async {
+    final todosOsPlanos = ref.read(listaPlanosProvider).value ?? [];
+    
+    final planoAtual = ref.read(planoSelecionadoProvider);
+    
+    PlanoModel? selecaoTemporaria = planoAtual;
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateModal) {
+            return AlertDialog(
+              title: const Text('Selecione o Plano de Saúde'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: todosOsPlanos.isEmpty 
+                  ? const Text('Nenhum plano cadastrado no sistema.')
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: todosOsPlanos.length,
+                      itemBuilder: (context, index) {
+                        final plano = todosOsPlanos[index];
+
+                        return RadioListTile<String?>(
+                          title: Text(plano.nome),
+                          value: plano.id, 
+                          groupValue: selecaoTemporaria?.id,
+                          activeColor: Colors.orange,
+                          onChanged: (String? idSelecionado) {
+                            setStateModal(() {
+                              selecaoTemporaria = plano;
+                            });
+                          },
+                        );
+                      },
+                    ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    ref.read(planoSelecionadoProvider.notifier).state = selecaoTemporaria;
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Confirmar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(cadastrandoPacienteProvider);
-    final listaPlanosAsync = ref.watch(listaPlanosProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -241,28 +290,32 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
               ),
               const SizedBox(height: 24),
               
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: const Text('Plano de Saúde *', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 8),
-              
-              listaPlanosAsync.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (err, stack) => Text('Erro ao carregar planos: $err'),
-                data: (planosDisponiveis) {
-                  final planoAtual = ref.watch(planoSelecionadoProvider);
-                  return Wrap(
-                    spacing: 8.0,
-                    children: planosDisponiveis.map((plano) {
-                      final isSelected = planoAtual?.id == plano.id;
-                      
-                      return ChoiceChip(
-                        label: Text(plano.nome),
-                        selected: isSelected,
-                        onSelected: (bool selected) => _togglePlano(plano, selected),
-                      );
-                    }).toList(),
+              Consumer(
+                builder: (context, ref, child) {
+                  final planoSelecionado = ref.watch(planoSelecionadoProvider);
+                  
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      leading: const Icon(Icons.assignment_ind, color: Colors.orange), // Ícone diferente para paciente
+                      title: const Text('Plano de Saúde *'),
+                      subtitle: Text(
+                        planoSelecionado == null 
+                          ? 'Nenhum plano selecionado' 
+                          : 'Selecionado: ${planoSelecionado.nome}',
+                        style: TextStyle(
+                          color: planoSelecionado == null ? Colors.red.shade700 : Colors.grey.shade700,
+                          fontWeight: planoSelecionado == null ? FontWeight.w500 : FontWeight.bold,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () => _mostrarDialogSelecaoPlano(context, ref),
+                    ),
                   );
                 },
               ),

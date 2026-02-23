@@ -1,3 +1,4 @@
+import 'package:faladr/views/detalhes_plano_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:faladr/views/cadastro_paciente_page.dart';
 import 'package:flutter/material.dart';
@@ -35,62 +36,113 @@ class DashboardPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Fala Doutor!',
-          style: GoogleFonts.montserrat(
-            color: Colors.teal,
-            fontSize: 30.0,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1,
-            ),
-          ),
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: SegmentedButton<TipoVisualizacao>(
-              segments: const [
-                ButtonSegment(
-                  value: TipoVisualizacao.medicos,
-                  label: Text('Médicos'),
-                  icon: Icon(Icons.medical_services),
+        toolbarHeight: 90.0,
+        backgroundColor: const Color(0xFF009688),
+        
+        // 1. AUMENTAMOS BASTANTE O LEADING PARA CABER LOGO + TEXTO
+        leadingWidth: 250.0, 
+        
+        // 2. AGRUPAMOS LOGO E NOME EM UMA LINHA (ROW) NO LADO ESQUERDO
+        leading: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.local_hospital, color: Colors.teal),
+              ),
+              const SizedBox(width: 12.0), // Espacinho entre logo e texto
+              Text(
+                'Fala Doutor!',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 20.0, // Diminuí levemente para encaixar melhor
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
                 ),
-                ButtonSegment(
-                  value: TipoVisualizacao.pacientes,
-                  label: Text('Pacientes'),
-                  icon: Icon(Icons.person),
-                ),
-                ButtonSegment( 
-                  value: TipoVisualizacao.planos,
-                  label: Text('Planos'),
-                  icon: Icon(Icons.description),
-                ),
-              ],
-              selected: {tipoAtual},
-              onSelectionChanged: (Set<TipoVisualizacao> newSelection) {
-                final novoTipo = newSelection.first;
-                
-                ref.read(tipoVisualizacaoProvider.notifier).trocarPara(novoTipo);
-
-                if (novoTipo == TipoVisualizacao.medicos) {
-                  ref.invalidate(listaMedicosProvider);
-                } else if (novoTipo == TipoVisualizacao.pacientes) {
-                  ref.invalidate(listaPacientesProvider);
-                } else if (novoTipo == TipoVisualizacao.planos) {
-                  ref.invalidate(listaPlanosProvider);
-                }
-              },
-            ),
+              ),
+            ],
           ),
         ),
-      ),
+        
+        // 3. A BARRA DE PESQUISA AGORA ASSUME O LUGAR DO TÍTULO
+        title: ConstrainedBox(
+          // Como ela está no centro, podemos dar um maxWidth maior pra ela (ex: 400)
+          constraints: const BoxConstraints(maxWidth: 700), 
+          child: SearchBar(
+            hintText: 'Pesquisar...',
+            leading: const Icon(Icons.search, color: Colors.grey),
+            elevation: const WidgetStatePropertyAll(1.0),
+            backgroundColor: const WidgetStatePropertyAll(Colors.white), 
+            onChanged: (textoBusca) {
+              //print('Usuário digitou: $textoBusca'); 
+            },
+          ),
+        ),
+        
+        // 4. FORÇAMOS O TÍTULO (A PESQUISA) A FICAR NO MEIO DA TELA
+        centerTitle: true, 
 
-      body: switch (tipoAtual) {
-        TipoVisualizacao.medicos => const _ListaMedicos(),
-        TipoVisualizacao.pacientes => const _ListaPacientes(),
-        TipoVisualizacao.planos => const _ListaPlanos(),
-      },
+        // Como movemos a pesquisa, o actions agora pode ficar vazio
+        // (No futuro, você pode colocar um ícone de perfil do usuário aqui!)
+        actions: const [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            // Exemplo de espaço reservado para futuro perfil/notificações
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 16.0),
+            child: Center( 
+              child: SegmentedButton<TipoVisualizacao>(
+                segments: const [
+                  ButtonSegment(
+                    value: TipoVisualizacao.medicos,
+                    label: Text('Médicos'),
+                    icon: Icon(Icons.medical_services),
+                  ),
+                  ButtonSegment(
+                    value: TipoVisualizacao.pacientes,
+                    label: Text('Pacientes'),
+                    icon: Icon(Icons.person),
+                  ),
+                  ButtonSegment( 
+                    value: TipoVisualizacao.planos,
+                    label: Text('Planos'),
+                    icon: Icon(Icons.description),
+                  ),
+                ],
+                selected: {tipoAtual},
+                onSelectionChanged: (Set<TipoVisualizacao> newSelection) {
+                  // ... sua lógica de onSelectionChanged continua igual ...
+                  final novoTipo = newSelection.first;
+                  ref.read(tipoVisualizacaoProvider.notifier).trocarPara(novoTipo);
+
+                  if (novoTipo == TipoVisualizacao.medicos) {
+                    ref.invalidate(listaMedicosProvider);
+                  } else if (novoTipo == TipoVisualizacao.pacientes) {
+                    ref.invalidate(listaPacientesProvider);
+                  } else if (novoTipo == TipoVisualizacao.planos) {
+                    ref.invalidate(listaPlanosProvider);
+                  }
+                },
+              ),
+            ),
+          ),
+
+          // Área da lista, usando o Expanded para não quebrar a tela
+          Expanded(
+            child: switch (tipoAtual) {
+              TipoVisualizacao.medicos => const _ListaMedicos(),
+              TipoVisualizacao.pacientes => const _ListaPacientes(),
+              TipoVisualizacao.planos => const _ListaPlanos(),
+            },
+          ),
+        ],
+      ),
 
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -317,7 +369,10 @@ class _ListaPlanos extends ConsumerWidget {
                 ),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                 onTap: () {
-                  // TODO: Navegar para CadastroPlanoPage(planoParaEditar: plano)
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => DetalhesPlanoPage(plano: plano)),
+                  );
                 },
               ),
             );
