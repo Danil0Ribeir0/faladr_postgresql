@@ -190,24 +190,31 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
                 width: double.maxFinite,
                 child: todosOsPlanos.isEmpty 
                   ? const Text('Nenhum plano cadastrado no sistema.')
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: todosOsPlanos.length,
-                      itemBuilder: (context, index) {
-                        final plano = todosOsPlanos[index];
-
-                        return RadioListTile<String?>(
-                          title: Text(plano.nome),
-                          value: plano.id, 
-                          groupValue: selecaoTemporaria?.id,
-                          activeColor: Colors.orange,
-                          onChanged: (String? idSelecionado) {
-                            setStateModal(() {
-                              selecaoTemporaria = plano;
-                            });
-                          },
-                        );
+                  : RadioGroup<String?>(
+                      groupValue: selecaoTemporaria?.id,
+                      onChanged: (String? idSelecionado) {
+                        if (idSelecionado != null) {
+                          final planoSelecionado = todosOsPlanos.firstWhere((p) => p.id == idSelecionado);
+                          
+                          setStateModal(() {
+                            selecaoTemporaria = planoSelecionado;
+                          });
+                        }
                       },
+                      
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: todosOsPlanos.length,
+                        itemBuilder: (context, index) {
+                          final plano = todosOsPlanos[index];
+
+                          return RadioListTile<String?>(
+                            title: Text(plano.nome),
+                            value: plano.id, 
+                            activeColor: Colors.teal,
+                          );
+                        },
+                      ),
                     ),
               ),
               actions: [
@@ -302,7 +309,7 @@ class _CadastroPacientePageState extends ConsumerState<CadastroPacientePage> {
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      leading: const Icon(Icons.assignment_ind, color: Colors.orange), // Ícone diferente para paciente
+                      leading: const Icon(Icons.assignment_ind, color: Colors.teal),
                       title: const Text('Plano de Saúde *'),
                       subtitle: Text(
                         planoSelecionado == null 

@@ -27,6 +27,10 @@ final tipoVisualizacaoProvider =
   return VisualizacaoNotifier();
 });
 
+final termoBuscaProvider = StateProvider<String>((ref) {
+  return '';
+});
+
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
@@ -39,10 +43,8 @@ class DashboardPage extends ConsumerWidget {
         toolbarHeight: 90.0,
         backgroundColor: const Color(0xFF009688),
         
-        // 1. AUMENTAMOS BASTANTE O LEADING PARA CABER LOGO + TEXTO
         leadingWidth: 250.0, 
         
-        // 2. AGRUPAMOS LOGO E NOME EM UMA LINHA (ROW) NO LADO ESQUERDO
         leading: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
@@ -51,12 +53,12 @@ class DashboardPage extends ConsumerWidget {
                 backgroundColor: Colors.white,
                 child: Icon(Icons.local_hospital, color: Colors.teal),
               ),
-              const SizedBox(width: 12.0), // Espacinho entre logo e texto
+              const SizedBox(width: 12.0),
               Text(
                 'Fala Doutor!',
                 style: GoogleFonts.montserrat(
                   color: Colors.white,
-                  fontSize: 20.0, // Diminuí levemente para encaixar melhor
+                  fontSize: 20.0,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -65,9 +67,7 @@ class DashboardPage extends ConsumerWidget {
           ),
         ),
         
-        // 3. A BARRA DE PESQUISA AGORA ASSUME O LUGAR DO TÍTULO
         title: ConstrainedBox(
-          // Como ela está no centro, podemos dar um maxWidth maior pra ela (ex: 400)
           constraints: const BoxConstraints(maxWidth: 700), 
           child: SearchBar(
             hintText: 'Pesquisar...',
@@ -75,22 +75,12 @@ class DashboardPage extends ConsumerWidget {
             elevation: const WidgetStatePropertyAll(1.0),
             backgroundColor: const WidgetStatePropertyAll(Colors.white), 
             onChanged: (textoBusca) {
-              //print('Usuário digitou: $textoBusca'); 
+              ref.read(termoBuscaProvider.notifier).state = textoBusca;
             },
           ),
         ),
         
-        // 4. FORÇAMOS O TÍTULO (A PESQUISA) A FICAR NO MEIO DA TELA
         centerTitle: true, 
-
-        // Como movemos a pesquisa, o actions agora pode ficar vazio
-        // (No futuro, você pode colocar um ícone de perfil do usuário aqui!)
-        actions: const [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            // Exemplo de espaço reservado para futuro perfil/notificações
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -117,9 +107,10 @@ class DashboardPage extends ConsumerWidget {
                 ],
                 selected: {tipoAtual},
                 onSelectionChanged: (Set<TipoVisualizacao> newSelection) {
-                  // ... sua lógica de onSelectionChanged continua igual ...
                   final novoTipo = newSelection.first;
                   ref.read(tipoVisualizacaoProvider.notifier).trocarPara(novoTipo);
+
+                  ref.read(termoBuscaProvider.notifier).state = '';
 
                   if (novoTipo == TipoVisualizacao.medicos) {
                     ref.invalidate(listaMedicosProvider);
@@ -133,7 +124,6 @@ class DashboardPage extends ConsumerWidget {
             ),
           ),
 
-          // Área da lista, usando o Expanded para não quebrar a tela
           Expanded(
             child: switch (tipoAtual) {
               TipoVisualizacao.medicos => const _ListaMedicos(),
@@ -180,10 +170,34 @@ class _ListaMedicos extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final medicosState = ref.watch(listaMedicosProvider);
 
+    final termoBusca = ref.watch(termoBuscaProvider).toLowerCase();
+
     return medicosState.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Erro: $err')),
       data: (medicos) {
+        final medicosFiltrados = termoBusca.isEmpty 
+            ? medicos 
+            : medicos.where((medico) {
+                return medico.nome.toLowerCase().contains(termoBusca);
+              }).toList();
+
+        if (medicosFiltrados.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  termoBusca.isEmpty ? 'Nenhum médico cadastrado' : 'Nenhum médico encontrado na busca',
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
         if (medicos.isEmpty) {
           return Center(
             child: Column(
@@ -204,9 +218,9 @@ class _ListaMedicos extends ConsumerWidget {
 
         return ListView.builder(
           padding: const EdgeInsets.all(8),
-          itemCount: medicos.length,
+          itemCount: medicosFiltrados.length,
           itemBuilder: (context, index) {
-            final medico = medicos[index];
+            final medico = medicosFiltrados[index];
             return Card(
               elevation: 2,
               margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
@@ -243,10 +257,34 @@ class _ListaPacientes extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pacientesState = ref.watch(listaPacientesProvider);
 
+    final termoBusca = ref.watch(termoBuscaProvider).toLowerCase();
+
     return pacientesState.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Erro: $err')),
       data: (pacientes) {
+        final pacientesFiltrados = termoBusca.isEmpty
+        ? pacientes 
+            : pacientes.where((pacientes) {
+                return pacientes.nome.toLowerCase().contains(termoBusca);
+              }).toList();
+        
+        if (pacientesFiltrados.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  termoBusca.isEmpty ? 'Nenhum paciente cadastrado' : 'Nenhum paciente encontrado na busca',
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
         if (pacientes.isEmpty) {
           return Center(
             child: Column(
@@ -267,15 +305,15 @@ class _ListaPacientes extends ConsumerWidget {
 
         return ListView.builder(
           padding: const EdgeInsets.all(8),
-          itemCount: pacientes.length,
+          itemCount: pacientesFiltrados.length,
           itemBuilder: (context, index) {
-            final paciente = pacientes[index];
+            final paciente = pacientesFiltrados[index];
             return Card(
               elevation: 2,
               margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.orange.shade100,
+                  backgroundColor: Colors.teal.shade100,
                   child: Text(paciente.nome.isNotEmpty ? paciente.nome[0] : '?'),
                 ),
                 title: Text(paciente.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -306,10 +344,34 @@ class _ListaPlanos extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final planosState = ref.watch(listaPlanosProvider);
 
+    final termoBusca = ref.watch(termoBuscaProvider).toLowerCase();
+
     return planosState.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Erro: $err')),
       data: (planos) {
+        final planosFiltrados = termoBusca.isEmpty
+        ? planos 
+            : planos.where((planos) {
+                return planos.nome.toLowerCase().contains(termoBusca);
+              }).toList();
+        
+        if (planosFiltrados.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  termoBusca.isEmpty ? 'Nenhum plano cadastrado' : 'Nenhum plano encontrado na busca',
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
         if (planos.isEmpty) {
           return Center(
             child: Column(
@@ -330,9 +392,9 @@ class _ListaPlanos extends ConsumerWidget {
 
         return ListView.builder(
           padding: const EdgeInsets.all(8),
-          itemCount: planos.length,
+          itemCount: planosFiltrados.length,
           itemBuilder: (context, index) {
-            final plano = planos[index];
+            final plano = planosFiltrados[index];
             
             final String qtdMedicos = plano.quantidadeMedicos > 0 ? plano.quantidadeMedicos.toString() : '-';
             final String qtdPacientes = plano.quantidadePacientes > 0 ? plano.quantidadePacientes.toString() : '-';
@@ -343,10 +405,10 @@ class _ListaPlanos extends ConsumerWidget {
               margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: plano.ativo ? Colors.blue.shade100 : Colors.grey.shade300,
+                  backgroundColor: plano.ativo ? Colors.teal.shade100 : Colors.grey.shade300,
                   child: Text(
                     plano.nome.isNotEmpty ? plano.nome[0] : '?',
-                    style: TextStyle(color: plano.ativo ? Colors.blue.shade900 : Colors.grey.shade700),
+                    style: TextStyle(color: plano.ativo ? Colors.black : Colors.grey.shade700),
                   ),
                 ),
                 title: Text(
