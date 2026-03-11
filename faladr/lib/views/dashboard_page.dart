@@ -34,92 +34,116 @@ final termoBuscaProvider = StateProvider<String>((ref) {
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
+  Widget _buildSearchBar(WidgetRef ref) {
+    return SearchBar(
+      hintText: 'Pesquisar...',
+      leading: const Icon(Icons.search, color: Colors.grey),
+      elevation: const WidgetStatePropertyAll(1.0),
+      backgroundColor: const WidgetStatePropertyAll(Colors.white),
+      onChanged: (textoBusca) {
+        ref.read(termoBuscaProvider.notifier).state = textoBusca;
+      },
+    );
+  }
+
+  Widget _buildLogo(bool isMobile) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.white,
+          radius: isMobile ? 18 : 20,
+          child: Icon(Icons.local_hospital, color: Colors.teal, size: isMobile ? 18 : 24),
+        ),
+        const SizedBox(width: 12.0),
+        Text(
+          'Fala Doutor!',
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontSize: isMobile ? 18.0 : 20.0,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tipoAtual = ref.watch(tipoVisualizacaoProvider);
 
+    final larguraTela = MediaQuery.sizeOf(context).width;
+    final isMobile = larguraTela < 600;
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 90.0,
-        backgroundColor: const Color(0xFF009688),
-        
-        leadingWidth: 250.0, 
-        
-        leading: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.local_hospital, color: Colors.teal),
+        backgroundColor: Colors.teal,
+        leadingWidth: isMobile ? 0 : 250.0,
+        leading: isMobile 
+            ? null 
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildLogo(isMobile),
               ),
-              const SizedBox(width: 12.0),
-              Text(
-                'Fala Doutor!',
-                style: GoogleFonts.montserrat(
-                  color: Colors.white,
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
+        title: isMobile 
+            ? _buildLogo(isMobile)
+            : ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 700),
+                child: _buildSearchBar(ref),
               ),
-            ],
-          ),
-        ),
-        
-        title: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700), 
-          child: SearchBar(
-            hintText: 'Pesquisar...',
-            leading: const Icon(Icons.search, color: Colors.grey),
-            elevation: const WidgetStatePropertyAll(1.0),
-            backgroundColor: const WidgetStatePropertyAll(Colors.white), 
-            onChanged: (textoBusca) {
-              ref.read(termoBuscaProvider.notifier).state = textoBusca;
-            },
-          ),
-        ),
-        
-        centerTitle: true, 
+        centerTitle: true,
       ),
       body: Column(
         children: [
+          if (isMobile)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+              child: _buildSearchBar(ref),
+            ),
+
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 16.0),
-            child: Center( 
-              child: SegmentedButton<TipoVisualizacao>(
-                segments: const [
-                  ButtonSegment(
-                    value: TipoVisualizacao.medicos,
-                    label: Text('Médicos'),
-                    icon: Icon(Icons.medical_services),
-                  ),
-                  ButtonSegment(
-                    value: TipoVisualizacao.pacientes,
-                    label: Text('Pacientes'),
-                    icon: Icon(Icons.person),
-                  ),
-                  ButtonSegment( 
-                    value: TipoVisualizacao.planos,
-                    label: Text('Planos'),
-                    icon: Icon(Icons.description),
-                  ),
-                ],
-                selected: {tipoAtual},
-                onSelectionChanged: (Set<TipoVisualizacao> newSelection) {
-                  final novoTipo = newSelection.first;
-                  ref.read(tipoVisualizacaoProvider.notifier).trocarPara(novoTipo);
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 8.0 : 40.0, 
+              vertical: 16.0
+            ),
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown, 
+                child: SegmentedButton<TipoVisualizacao>(
+                  segments: const [
+                    ButtonSegment(
+                      value: TipoVisualizacao.medicos,
+                      label: Text('Médicos'),
+                      icon: Icon(Icons.medical_services),
+                    ),
+                    ButtonSegment(
+                      value: TipoVisualizacao.pacientes,
+                      label: Text('Pacientes'),
+                      icon: Icon(Icons.person),
+                    ),
+                    ButtonSegment(
+                      value: TipoVisualizacao.planos,
+                      label: Text('Planos'),
+                      icon: Icon(Icons.description),
+                    ),
+                  ],
+                  selected: {tipoAtual},
+                  onSelectionChanged: (Set<TipoVisualizacao> newSelection) {
+                    final novoTipo = newSelection.first;
+                    ref.read(tipoVisualizacaoProvider.notifier).trocarPara(novoTipo);
+                    ref.read(termoBuscaProvider.notifier).state = '';
 
-                  ref.read(termoBuscaProvider.notifier).state = '';
-
-                  if (novoTipo == TipoVisualizacao.medicos) {
-                    ref.invalidate(listaMedicosProvider);
-                  } else if (novoTipo == TipoVisualizacao.pacientes) {
-                    ref.invalidate(listaPacientesProvider);
-                  } else if (novoTipo == TipoVisualizacao.planos) {
-                    ref.invalidate(listaPlanosProvider);
-                  }
-                },
+                    if (novoTipo == TipoVisualizacao.medicos) {
+                      ref.invalidate(listaMedicosProvider);
+                    } else if (novoTipo == TipoVisualizacao.pacientes) {
+                      ref.invalidate(listaPacientesProvider);
+                    } else if (novoTipo == TipoVisualizacao.planos) {
+                      ref.invalidate(listaPlanosProvider);
+                    }
+                  },
+                ),
               ),
             ),
           ),

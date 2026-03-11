@@ -153,7 +153,7 @@ class DetalhesPlanoPage extends ConsumerWidget {
           children: [
             _buildLista(medicosDoPlano, 'Nenhum médico vinculado.', Icons.medical_information, Colors.teal.shade100),
             
-            _buildLista(pacientesDoPlano, 'Nenhum paciente vinculado.', Icons.personal_injury, Colors.orange.shade100),
+            _buildLista(pacientesDoPlano, 'Nenhum paciente vinculado.', Icons.personal_injury, Colors.teal.shade100),
           ],
         ),
       ),
