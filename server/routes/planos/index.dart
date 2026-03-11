@@ -51,6 +51,14 @@ Future<Response> onRequest(RequestContext context) async {
         body: {'message': 'Plano criado com sucesso!'}
       );
     } catch (e) {
+      final erroStr = e.toString();
+      
+      if (erroStr.contains('unique constraint')) {
+        return Response.json(
+          statusCode: 409, 
+          body: {'error': 'Já existe um plano cadastrado com este nome.'}
+        );
+      }
       return Response.json(statusCode: 400, body: {'error': 'Erro ao salvar plano: $e'});
     }
   }

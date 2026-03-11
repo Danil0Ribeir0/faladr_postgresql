@@ -53,10 +53,15 @@ Future<Response> onRequest(RequestContext context) async {
       );
 
     } catch (e) {
-      if (e.toString().contains('unique constraint')) {
-        return Response.json(statusCode: 409, body: {'error': 'CPF já cadastrado.'});
+      final erroStr = e.toString();
+      
+      if (erroStr.contains('unique constraint')) {
+        return Response.json(
+          statusCode: 409, 
+          body: {'error': 'Já existe um paciente cadastrado com este nome.'}
+        );
       }
-      return Response.json(statusCode: 400, body: {'error': 'Erro ao salvar: $e'});
+      return Response.json(statusCode: 400, body: {'error': 'Erro ao salvar paciente: $e'});
     }
   }
 
