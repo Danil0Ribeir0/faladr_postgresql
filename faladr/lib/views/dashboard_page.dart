@@ -9,6 +9,8 @@ import '../controller/plano_controller.dart';
 import '../views/cadastro_medico_page.dart';
 import 'package:faladr_shared/faladr_shared.dart';
 
+final menuSelecionadoProvider = StateProvider<int>((ref) => 0);
+
 enum TipoVisualizacao {medicos, pacientes, planos}
 
 class VisualizacaoNotifier extends Notifier<TipoVisualizacao> {
