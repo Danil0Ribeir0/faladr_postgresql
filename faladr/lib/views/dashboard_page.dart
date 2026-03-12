@@ -8,6 +8,7 @@ import '../controller/paciente_controller.dart';
 import '../controller/plano_controller.dart';
 import '../views/cadastro_medico_page.dart';
 import 'package:faladr_shared/faladr_shared.dart';
+import 'consultas_dashboard_page.dart';
 
 final menuSelecionadoProvider = StateProvider<int>((ref) => 0);
 
@@ -74,6 +75,7 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tipoAtual = ref.watch(tipoVisualizacaoProvider);
+    final indiceAtual = ref.watch(menuSelecionadoProvider);
 
     final larguraTela = MediaQuery.sizeOf(context).width;
     final isMobile = larguraTela < 600;
@@ -82,109 +84,165 @@ class DashboardPage extends ConsumerWidget {
       appBar: AppBar(
         toolbarHeight: 90.0,
         backgroundColor: Colors.teal,
-        leadingWidth: isMobile ? 0 : 250.0,
-        leading: isMobile 
-            ? null 
-            : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _buildLogo(isMobile),
-              ),
-        title: isMobile 
-            ? _buildLogo(isMobile)
-            : ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 700),
-                child: _buildSearchBar(ref),
-              ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          if (isMobile)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-              child: _buildSearchBar(ref),
-            ),
-
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 8.0 : 40.0, 
-              vertical: 16.0
-            ),
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown, 
-                child: SegmentedButton<TipoVisualizacao>(
-                  segments: const [
-                    ButtonSegment(
-                      value: TipoVisualizacao.medicos,
-                      label: Text('Médicos'),
-                      icon: Icon(Icons.medical_services),
-                    ),
-                    ButtonSegment(
-                      value: TipoVisualizacao.pacientes,
-                      label: Text('Pacientes'),
-                      icon: Icon(Icons.person),
-                    ),
-                    ButtonSegment(
-                      value: TipoVisualizacao.planos,
-                      label: Text('Planos'),
-                      icon: Icon(Icons.description),
-                    ),
-                  ],
-                  selected: {tipoAtual},
-                  onSelectionChanged: (Set<TipoVisualizacao> newSelection) {
-                    final novoTipo = newSelection.first;
-                    ref.read(tipoVisualizacaoProvider.notifier).trocarPara(novoTipo);
-                    ref.read(termoBuscaProvider.notifier).state = '';
-
-                    if (novoTipo == TipoVisualizacao.medicos) {
-                      ref.invalidate(listaMedicosProvider);
-                    } else if (novoTipo == TipoVisualizacao.pacientes) {
-                      ref.invalidate(listaPacientesProvider);
-                    } else if (novoTipo == TipoVisualizacao.planos) {
-                      ref.invalidate(listaPlanosProvider);
-                    }
-                  },
+        iconTheme: const IconThemeData(color: Colors.white),
+        leadingWidth: null,
+        leading: null, 
+        
+        centerTitle: false,
+        title: Row(
+          children: [
+            if (!isMobile) ...[
+              _buildLogo(isMobile),
+              const SizedBox(width: 24),
+            ],
+            
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
+                  child: indiceAtual == 0 
+                      ? _buildSearchBar(ref) 
+                      : const Text(
+                          'Consultas', 
+                          style: TextStyle(
+                            color: Colors.white, 
+                            fontSize: 22, 
+                            fontWeight: FontWeight.bold
+                          )
+                        ),
                 ),
               ),
             ),
+            if (!isMobile) const SizedBox(width: 150), 
+          ],
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Colors.teal),
+              child: _buildLogo(false),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard),
+              title: const Text('Dashboard Principal'),
+              selected: indiceAtual == 0,
+              onTap: () {
+                ref.read(menuSelecionadoProvider.notifier).state = 0;
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Consultas'),
+              selected: indiceAtual == 1,
+              onTap: () {
+                ref.read(menuSelecionadoProvider.notifier).state = 1;
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+      body: IndexedStack(
+        index: indiceAtual,
+        children: [
+          Column(
+            children: [
+              if (isMobile)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+                  child: _buildSearchBar(ref),
+                ),
+
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 8.0 : 40.0, 
+                  vertical: 16.0
+                ),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown, 
+                    child: SegmentedButton<TipoVisualizacao>(
+                      segments: const [
+                        ButtonSegment(
+                          value: TipoVisualizacao.medicos,
+                          label: Text('Médicos'),
+                          icon: Icon(Icons.medical_services),
+                        ),
+                        ButtonSegment(
+                          value: TipoVisualizacao.pacientes,
+                          label: Text('Pacientes'),
+                          icon: Icon(Icons.person),
+                        ),
+                        ButtonSegment(
+                          value: TipoVisualizacao.planos,
+                          label: Text('Planos'),
+                          icon: Icon(Icons.description),
+                        ),
+                      ],
+                      selected: {tipoAtual},
+                      onSelectionChanged: (Set<TipoVisualizacao> newSelection) {
+                        final novoTipo = newSelection.first;
+                        ref.read(tipoVisualizacaoProvider.notifier).trocarPara(novoTipo);
+                        ref.read(termoBuscaProvider.notifier).state = '';
+
+                        if (novoTipo == TipoVisualizacao.medicos) {
+                          ref.invalidate(listaMedicosProvider);
+                        } else if (novoTipo == TipoVisualizacao.pacientes) {
+                          ref.invalidate(listaPacientesProvider);
+                        } else if (novoTipo == TipoVisualizacao.planos) {
+                          ref.invalidate(listaPlanosProvider);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              Expanded(
+                child: switch (tipoAtual) {
+                  TipoVisualizacao.medicos => const _ListaMedicos(),
+                  TipoVisualizacao.pacientes => const _ListaPacientes(),
+                  TipoVisualizacao.planos => const _ListaPlanos(),
+                },
+              ),
+            ],
           ),
 
-          Expanded(
-            child: switch (tipoAtual) {
-              TipoVisualizacao.medicos => const _ListaMedicos(),
-              TipoVisualizacao.pacientes => const _ListaPacientes(),
-              TipoVisualizacao.planos => const _ListaPlanos(),
-            },
-          ),
+          const ConsultasDashboardPage(),
         ],
       ),
 
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (tipoAtual == TipoVisualizacao.medicos) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CadastroMedicoPage())
-            );
-          } else if (tipoAtual == TipoVisualizacao.pacientes) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CadastroPacientePage())
-            );
-          } else {
-            _mostrarDialogNovoPlano(context, ref);
-          }
-        },
-        label: Text(
-          tipoAtual == TipoVisualizacao.medicos
-              ? 'Novo Médico'
-              : tipoAtual == TipoVisualizacao.pacientes
-                  ? 'Novo Paciente'
-                  : 'Novo Plano',
-        ),
-        icon: const Icon(Icons.add),
-      ),
+      floatingActionButton: indiceAtual == 1 
+        ? null 
+        : FloatingActionButton.extended(
+            onPressed: () {
+              if (tipoAtual == TipoVisualizacao.medicos) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CadastroMedicoPage())
+                );
+              } else if (tipoAtual == TipoVisualizacao.pacientes) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CadastroPacientePage())
+                );
+              } else {
+                _mostrarDialogNovoPlano(context, ref);
+              }
+            },
+            label: Text(
+              tipoAtual == TipoVisualizacao.medicos
+                  ? 'Novo Médico'
+                  : tipoAtual == TipoVisualizacao.pacientes
+                      ? 'Novo Paciente'
+                      : 'Novo Plano',
+            ),
+            icon: const Icon(Icons.add),
+          ),
     );
   }
 }
