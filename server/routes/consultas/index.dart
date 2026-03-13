@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:postgres/postgres.dart';
 import 'package:faladr_shared/faladr_shared.dart';
@@ -11,9 +12,10 @@ Future<Response> onRequest(RequestContext context) async {
       final result = await db.execute(r'''
         SELECT 
           c.id, c.plano_id, c.medico_id, c.paciente_id, c.data_hora, c.status, c.observacoes,
-          json_build_object('id', pl.id, 'nome', pl.nome) as plano,
-          json_build_object('id', m.id, 'nome', m.nome) as medico,
-          json_build_object('id', p.id, 'nome', p.nome) as paciente
+          row_to_json(pl) as plano,
+          row_to_json(m) as medico,
+          -- A MÁGICA ACONTECE AQUI: Fundimos o JSON do Paciente com o JSON do Plano dele!
+          (row_to_json(p)::jsonb || jsonb_build_object('plano', row_to_json(pl)::jsonb)) as paciente
         FROM consultas c
         JOIN planos pl ON c.plano_id = pl.id
         JOIN medicos m ON c.medico_id = m.id
@@ -22,6 +24,12 @@ Future<Response> onRequest(RequestContext context) async {
       ''');
 
       final listaConsultas = result.map((row) {
+        dynamic parseJson(dynamic val) {
+          if (val == null) return null;
+          if (val is String) return jsonDecode(val);
+          return val;
+        }
+
         return ConsultaModel.fromMap({
           'id': row[0].toString(),
           'plano_id': row[1].toString(),
@@ -30,15 +38,15 @@ Future<Response> onRequest(RequestContext context) async {
           'data_hora': row[4].toString(),
           'status': row[5],
           'observacoes': row[6] ?? '',
-          'plano': row[7],
-          'medico': row[8],
-          'paciente': row[9],
+          'plano': parseJson(row[7]),
+          'medico': parseJson(row[8]),
+          'paciente': parseJson(row[9]),
         });
       }).toList();
 
       return Response.json(body: listaConsultas.map((c) => c.toMap()).toList());
     } catch (e) {
-      return Response.json(statusCode: 500, body: {'error': 'Erro ao buscar consultas: $e'});
+      return Response.json(statusCode: 500, body: {'error': 'Erro ao formatar o GET: $e'});
     }
   }
 
@@ -48,7 +56,7 @@ Future<Response> onRequest(RequestContext context) async {
       final consulta = ConsultaModel.fromMap(json);
 
       final validacaoPlano = await db.execute(
-        r'SELECT 1 FROM medico_planos WHERE medico_id = $1 AND plano_id = $2',
+        r'SELECT 1 FROM medico_planos WHERE medico_id = $1::uuid AND plano_id = $2::uuid',
         parameters: [consulta.medicoId, consulta.planoId],
       );
 
@@ -62,7 +70,7 @@ Future<Response> onRequest(RequestContext context) async {
       final result = await db.execute(
         r'''
         INSERT INTO consultas (plano_id, medico_id, paciente_id, data_hora, status, observacoes) 
-        VALUES ($1, $2, $3, $4, $5, $6) 
+        VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6) 
         RETURNING id
         ''',
         parameters: [

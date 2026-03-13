@@ -1,16 +1,7 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  static const String _meuIpLocal = '192.168.1.4'; 
-  static const String _porta = '8080';
-
-  static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:$_porta';
-    }
-    
-    return 'http://$_meuIpLocal:$_porta'; 
-  }
+  static String get baseUrl => dotenv.env['API_URL'] ?? 'http://localhost:8080';
 
   static String get medicos => '$baseUrl/medicos';
   static String get pacientes => '$baseUrl/pacientes';

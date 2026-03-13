@@ -25,12 +25,12 @@ Future<Response> onRequest(RequestContext context) async {
 
       final listaMedicos = result.map((row) {
         return MedicoModel.fromMap({
-          'id': row,
-          'nome': row,
-          'crm': row,
-          'cpf': row,
-          'data_nascimento': row.toString(),
-          'planos': row,
+          'id': row[0],
+          'nome': row[1],
+          'crm': row[2],
+          'cpf': row[3],
+          'data_nascimento': row[4].toString(),
+          'planos': row[5],
         });
       }).toList();
 

@@ -17,9 +17,19 @@ class ConsultaRepository {
         throw Exception('Falha ao carregar as consultas. Código: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw Exception('Erro de ligação: ${e.message}');
+      String mensagemErro = 'Erro de conexão';
+      
+      if (e.response?.data != null) {
+        if (e.response!.data is Map) {
+          mensagemErro = e.response!.data['error'] ?? 'Erro no servidor (500)';
+        } else {
+          mensagemErro = e.response!.data.toString();
+          mensagemErro = mensagemErro.replaceAll('{"error":"', '').replaceAll('"}', ''); 
+        }
+      }
+      throw Exception(mensagemErro);
     } catch (e) {
-      throw Exception('Erro desconhecido: $e');
+      throw Exception('Erro ao processar as consultas: $e');
     }
   }
 
@@ -36,8 +46,18 @@ class ConsultaRepository {
         return false;
       }
     } on DioException catch (e) {
-      final erro = e.response?.data['error'] ?? 'Erro desconhecido';
-      throw Exception(erro);
+      String mensagemErro = 'Erro desconhecido';
+      
+      if (e.response?.data != null) {
+        if (e.response!.data is Map) {
+          mensagemErro = e.response!.data['error'] ?? 'Erro no servidor';
+        } else {
+          mensagemErro = e.response!.data.toString();
+          mensagemErro = mensagemErro.replaceAll('{"error":"', '').replaceAll('"}', ''); 
+        }
+      }
+      throw Exception(mensagemErro);
+      
     } catch (e) {
       throw Exception('Erro ao agendar consulta: $e');
     }

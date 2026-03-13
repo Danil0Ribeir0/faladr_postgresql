@@ -53,6 +53,10 @@ class ConsultaModel {
       'data_hora': dataHora.toIso8601String(),
       'status': status,
       'observacoes': observacoes,
+
+      if (plano != null) 'plano': plano!.toMap(),
+      if (medico != null) 'medico': medico!.toMap(),
+      if (paciente != null) 'paciente': paciente!.toMap(),
     };
   }
 }

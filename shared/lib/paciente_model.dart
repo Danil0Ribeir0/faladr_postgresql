@@ -35,6 +35,7 @@ class PacienteModel {
       'nome': nome,
       'cpf': cpf,
       'data_nascimento': dataNascimento.toIso8601String().split('T')[0],
+      'plano_id': plano.id,
       'plano': plano.toMap(),
     };
   }
