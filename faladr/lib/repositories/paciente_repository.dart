@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
-import '../core/api_config.dart';
+import '../core/dio_provider.dart';
 
 class PacienteRepository {
-  final _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
+  final Dio _dio;
+
+  PacienteRepository(this._dio);
 
   Future<void> criarPaciente(PacienteModel paciente) async {
     try {
@@ -75,5 +77,7 @@ class PacienteRepository {
 }
 
 final pacienteRepositoryProvider = Provider<PacienteRepository>((ref) {
-  return PacienteRepository();
+  final dio = ref.watch(dioProvider); 
+  
+  return PacienteRepository(dio);
 });

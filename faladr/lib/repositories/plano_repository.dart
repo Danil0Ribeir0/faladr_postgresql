@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
-import '../core/api_config.dart';
+import '../core/dio_provider.dart';
 
 class PlanoRepository {
-  final _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
+  final Dio _dio;
+
+  PlanoRepository(this._dio);
 
   Future<List<PlanoModel>> getPlanos() async {
     try {
@@ -52,5 +54,7 @@ class PlanoRepository {
 }
 
 final planoRepositoryProvider = Provider<PlanoRepository>((ref) {
-  return PlanoRepository();
+  final dio = ref.watch(dioProvider); 
+  
+  return PlanoRepository(dio);
 });

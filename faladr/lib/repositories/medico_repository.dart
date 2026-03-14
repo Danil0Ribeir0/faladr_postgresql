@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
-import '../core/api_config.dart';
+import '../core/dio_provider.dart';
 
 class MedicoRepository {
-  final _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
+  final Dio _dio;
+
+  MedicoRepository(this._dio);
 
   String _extrairErroBackend(DioException e, String mensagemPadrao) {
     try {
@@ -79,5 +81,7 @@ class MedicoRepository {
 }
 
 final medicoRepositoryProvider = Provider<MedicoRepository>((ref) {
-  return MedicoRepository();
+  final dio = ref.watch(dioProvider); 
+  
+  return MedicoRepository(dio);
 });
