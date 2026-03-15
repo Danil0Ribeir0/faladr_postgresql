@@ -27,7 +27,12 @@ class PlanoRepository {
       final response = await _dio.post('/planos', data: plano.toMap());
       if (response.statusCode != 201) throw Exception('Erro ao criar plano');
     } on DioException catch (e) {
-      throw Exception('Erro de rede: ${e.message}');
+      if (e.response != null && e.response?.data != null && e.response?.data['error'] != null) {
+        throw Exception(e.response!.data['error']);
+      }
+      throw Exception('Erro de conexão: ${e.message}');
+    } catch (e) {
+      throw Exception('Erro inesperado: $e');
     }
   }
 
@@ -37,7 +42,12 @@ class PlanoRepository {
       final response = await _dio.put('/planos/${plano.id}', data: plano.toMap());
       if (response.statusCode != 200) throw Exception('Erro ao atualizar plano');
     } on DioException catch (e) {
-      throw Exception('Erro de rede: ${e.message}');
+      if (e.response != null && e.response?.data != null && e.response?.data['error'] != null) {
+        throw Exception(e.response!.data['error']);
+      }
+      throw Exception('Erro de conexão: ${e.message}');
+    } catch (e) {
+      throw Exception('Erro inesperado: $e');
     }
   }
 

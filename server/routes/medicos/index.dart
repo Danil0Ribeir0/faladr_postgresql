@@ -52,13 +52,6 @@ Future<Response> onRequest(RequestContext context) async {
         );
       }
 
-      if (medico.planos.length > 3) {
-        return Response.json(
-          statusCode: 400, 
-          body: {'error': 'Limite excedido: Máximo de 3 planos por médico.'}
-        );
-      }
-
       await db.runTx((session) async {
         final result = await session.execute(
           r'INSERT INTO medicos (nome, crm, cpf, data_nascimento) VALUES ($1, $2, $3, $4) RETURNING id',

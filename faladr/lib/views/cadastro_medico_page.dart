@@ -241,19 +241,7 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
                           onChanged: (bool? checked) {
                             setStateModal(() {
                               if (checked == true) {
-                                if (selecaoTemporaria.length < 3) {
-                                  selecaoTemporaria.add(plano);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Limite máximo de 3 planos atingido!'),
-                                      backgroundColor: Colors.orange,
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              } else {
-                                selecaoTemporaria.removeWhere((p) => p.id == plano.id);
+                                selecaoTemporaria.add(plano);
                               }
                             });
                           },
@@ -403,12 +391,12 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       side: BorderSide(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(4), // Igual ao OutlineInputBorder
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       leading: const Icon(Icons.medical_information, color: Colors.teal),
-                      title: const Text('Planos de Saúde (Máx: 3)'),
+                      title: const Text('Planos de Saúde'),
                       subtitle: Text(
                         selecionados.isEmpty 
                           ? 'Nenhum plano selecionado' 

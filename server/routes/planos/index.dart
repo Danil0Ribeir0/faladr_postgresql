@@ -41,9 +41,23 @@ Future<Response> onRequest(RequestContext context) async {
       final json = await context.request.json() as Map<String, dynamic>;
       final plano = PlanoModel.fromMap(json);
 
+      final nomeFormatado = plano.nome.trim();
+
+      final checkResult = await db.execute(
+        r'SELECT id FROM planos WHERE LOWER(nome) = LOWER($1)',
+        parameters: [nomeFormatado],
+      );
+
+      if (checkResult.isNotEmpty) {
+        return Response.json(
+          statusCode: 409, 
+          body: {'error': 'Já existe um plano cadastrado com este nome.'}
+        );
+      }
+
       await db.execute(
         r'INSERT INTO planos (nome, ativo) VALUES ($1, $2)',
-        parameters: [plano.nome, plano.ativo],
+        parameters: [nomeFormatado, plano.ativo],
       );
 
       return Response.json(
@@ -51,15 +65,7 @@ Future<Response> onRequest(RequestContext context) async {
         body: {'message': 'Plano criado com sucesso!'}
       );
     } catch (e) {
-      final erroStr = e.toString();
-      
-      if (erroStr.contains('unique constraint')) {
-        return Response.json(
-          statusCode: 409, 
-          body: {'error': 'Já existe um plano cadastrado com este nome.'}
-        );
-      }
-      return Response.json(statusCode: 400, body: {'error': 'Erro ao salvar plano: $e'});
+      return Response.json(statusCode: 500, body: {'error': 'Erro no servidor: $e'});
     }
   }
 
