@@ -64,7 +64,17 @@ class ConsultasDashboardPage extends ConsumerWidget {
 
               return Card(
                 elevation: 2,
+                clipBehavior: Clip.antiAlias,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CadastroConsultaPage(consultaParaEditar: consulta),
+                      ),
+                    );
+                  },
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -77,13 +87,13 @@ class ConsultasDashboardPage extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: consulta.status == 'Confirmada' ? Colors.green.withValues() : Colors.orange.withValues(),
+                              color: consulta.status == 'Confirmada' ? Colors.orange.withValues() : Colors.green.withValues(),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               consulta.status,
                               style: TextStyle(
-                                color: consulta.status == 'Confirmada' ? Colors.green[800] : Colors.orange[800],
+                                color: consulta.status == 'Confirmada' ? Colors.orange[800] : Colors.green[800],
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -112,9 +122,10 @@ class ConsultasDashboardPage extends ConsumerWidget {
                           const Icon(Icons.medical_services_outlined, color: Colors.blueGrey),
                           const SizedBox(width: 8),
                           Expanded(child: Text(consulta.medico?.nome ?? 'Médico Desconhecido', style: const TextStyle(fontSize: 14, color: Colors.blueGrey), overflow: TextOverflow.ellipsis)),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

@@ -10,7 +10,8 @@ import '../controller/cadastro_consulta_controller.dart';
 import '../repositories/consulta_repository.dart'; 
 
 class CadastroConsultaPage extends ConsumerStatefulWidget {
-  const CadastroConsultaPage({super.key});
+  final ConsultaModel? consultaParaEditar;
+  const CadastroConsultaPage({super.key, this.consultaParaEditar});
 
   @override
   ConsumerState<CadastroConsultaPage> createState() => _CadastroConsultaPageState();
@@ -22,7 +23,17 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
   @override
   void initState() {
     super.initState();
-    observacoesController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.consultaParaEditar != null) {
+        final consulta = widget.consultaParaEditar!;
+        
+        ref.read(formPlanoProvider.notifier).state = consulta.plano;
+        ref.read(formPacienteProvider.notifier).state = consulta.paciente;
+        ref.read(formMedicoProvider.notifier).state = consulta.medico;
+        ref.read(formDataProvider.notifier).state = consulta.dataHora;
+        observacoesController.text = consulta.observacoes;
+      }
+    });
   }
 
   @override
@@ -59,19 +70,23 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
               const Text('1. Selecione o Plano', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               planosAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, s) => Text('Erro ao carregar planos: $e'),
-                data: (planos) => DropdownButtonFormField<PlanoModel>(
-                  decoration: const InputDecoration(border: OutlineInputBorder()),
-                  hint: const Text('Escolha o Plano de Saúde'),
-                  value: planoSelecionado,
-                  items: planos.map((p) => DropdownMenuItem(value: p, child: Text(p.nome))).toList(),
-                  onChanged: (novoPlano) {
-                    ref.read(formPlanoProvider.notifier).state = novoPlano;
-                    ref.read(formPacienteProvider.notifier).state = null;
-                    ref.read(formMedicoProvider.notifier).state = null;
+                data: (planos) => DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Plano de Saúde'),
+                  initialValue: planoSelecionado?.id, 
+                  items: planos.map((plano) {
+                    return DropdownMenuItem<String>(
+                      value: plano.id,
+                      child: Text(plano.nome),
+                    );
+                  }).toList(),
+                  onChanged: (novoId) {
+                    final objetoPlano = planos.firstWhere((p) => p.id == novoId);
+                    ref.read(formPlanoProvider.notifier).state = objetoPlano;
                   },
+                  validator: (value) => value == null ? 'Selecione um plano' : null,
                 ),
+                loading: () => const LinearProgressIndicator(),
+                error: (e, s) => Text('Erro: $e'),
               ),
               const SizedBox(height: 24),
 
@@ -87,7 +102,7 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
                     return DropdownButtonFormField<PacienteModel>(
                       decoration: const InputDecoration(border: OutlineInputBorder()),
                       hint: const Text('Selecione um Paciente'),
-                      value: pacienteSelecionado,
+                      initialValue: pacienteSelecionado,
                       items: pacientesFiltrados.map((p) => DropdownMenuItem(value: p, child: Text(p.nome))).toList(),
                       onChanged: (novo) => ref.read(formPacienteProvider.notifier).state = novo,
                     );
@@ -106,7 +121,7 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
                     return DropdownButtonFormField<MedicoModel>(
                       decoration: const InputDecoration(border: OutlineInputBorder()),
                       hint: const Text('Selecione um Médico'),
-                      value: medicoSelecionado,
+                      initialValue: medicoSelecionado,
                       items: medicosFiltrados.map((m) => DropdownMenuItem(value: m, child: Text(m.nome))).toList(),
                       onChanged: (novo) => ref.read(formMedicoProvider.notifier).state = novo,
                     );
