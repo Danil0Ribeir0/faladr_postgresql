@@ -241,7 +241,11 @@ class _CadastroMedicoPageState extends ConsumerState<CadastroMedicoPage> {
                           onChanged: (bool? checked) {
                             setStateModal(() {
                               if (checked == true) {
-                                selecaoTemporaria.add(plano);
+                                if (!selecaoTemporaria.any((p) => p.id == plano.id)) {
+                                  selecaoTemporaria.add(plano);
+                                }
+                              } else {
+                                selecaoTemporaria.removeWhere((p) => p.id == plano.id);
                               }
                             });
                           },

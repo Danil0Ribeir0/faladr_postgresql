@@ -11,13 +11,6 @@ Future<Response> onRequest(RequestContext context, String id) async {
       final json = await context.request.json() as Map<String, dynamic>;
       final medico = MedicoModel.fromMap(json);
 
-      if (medico.planos.length > 3) {
-        return Response.json(
-          statusCode: 400, 
-          body: {'error': 'Limite excedido: Máximo de 3 planos por médico.'}
-        );
-      }
-
       await db.runTx((session) async {
         final result = await session.execute(
           r'''

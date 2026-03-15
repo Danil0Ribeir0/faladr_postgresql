@@ -53,7 +53,6 @@ Future<void> editarMedico({
 }) async {
   
   if (planos.isEmpty) throw Exception('Selecione pelo menos 1 plano de saúde.');
-  if (planos.length > 3) throw Exception('Selecione no máximo 3 planos de saúde.');
 
   ref.read(cadastrandoProvider.notifier).state = true;
 
