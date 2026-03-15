@@ -7,12 +7,32 @@ import '../controller/paciente_controller.dart';
 import '../controller/medico_controller.dart';
 import '../controller/consulta_controller.dart';
 import '../controller/cadastro_consulta_controller.dart';
+import '../repositories/consulta_repository.dart'; 
 
-class CadastroConsultaPage extends ConsumerWidget {
+class CadastroConsultaPage extends ConsumerStatefulWidget {
   const CadastroConsultaPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CadastroConsultaPage> createState() => _CadastroConsultaPageState();
+}
+
+class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
+  late final TextEditingController observacoesController;
+
+  @override
+  void initState() {
+    super.initState();
+    observacoesController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    observacoesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final planosAsync = ref.watch(listaPlanosProvider);
     final pacientesAsync = ref.watch(listaPacientesProvider);
     final medicosAsync = ref.watch(listaMedicosProvider);
@@ -23,8 +43,6 @@ class CadastroConsultaPage extends ConsumerWidget {
     final dataHora = ref.watch(formDataProvider);
     
     final estaASalvar = ref.watch(salvandoConsultaProvider);
-
-    final observacoesController = TextEditingController();
 
     return Scaffold(
       appBar: AppBar(
@@ -41,12 +59,12 @@ class CadastroConsultaPage extends ConsumerWidget {
               const Text('1. Selecione o Plano', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               planosAsync.when(
-                loading: () => const CircularProgressIndicator(),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, s) => Text('Erro ao carregar planos: $e'),
                 data: (planos) => DropdownButtonFormField<PlanoModel>(
                   decoration: const InputDecoration(border: OutlineInputBorder()),
                   hint: const Text('Escolha o Plano de Saúde'),
-                  initialValue: planoSelecionado,
+                  value: planoSelecionado,
                   items: planos.map((p) => DropdownMenuItem(value: p, child: Text(p.nome))).toList(),
                   onChanged: (novoPlano) {
                     ref.read(formPlanoProvider.notifier).state = novoPlano;
@@ -61,7 +79,7 @@ class CadastroConsultaPage extends ConsumerWidget {
                 const Text('2. Selecione o Paciente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 pacientesAsync.when(
-                  loading: () => const CircularProgressIndicator(),
+                  loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, s) => Text('Erro ao carregar pacientes: $e'),
                   data: (pacientes) {
                     final pacientesFiltrados = pacientes.where((p) => p.plano.id == planoSelecionado.id).toList();
@@ -69,7 +87,7 @@ class CadastroConsultaPage extends ConsumerWidget {
                     return DropdownButtonFormField<PacienteModel>(
                       decoration: const InputDecoration(border: OutlineInputBorder()),
                       hint: const Text('Selecione um Paciente'),
-                      initialValue: pacienteSelecionado,
+                      value: pacienteSelecionado,
                       items: pacientesFiltrados.map((p) => DropdownMenuItem(value: p, child: Text(p.nome))).toList(),
                       onChanged: (novo) => ref.read(formPacienteProvider.notifier).state = novo,
                     );
@@ -80,16 +98,15 @@ class CadastroConsultaPage extends ConsumerWidget {
                 const Text('3. Selecione o Médico', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 medicosAsync.when(
-                  loading: () => const CircularProgressIndicator(),
+                  loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, s) => Text('Erro ao carregar médicos: $e'),
                   data: (medicos) {
-                    // FILTRO INTELIGENTE 2: Apenas médicos que atendem o plano selecionado
                     final medicosFiltrados = medicos.where((m) => m.planos.any((p) => p.id == planoSelecionado.id)).toList();
 
                     return DropdownButtonFormField<MedicoModel>(
                       decoration: const InputDecoration(border: OutlineInputBorder()),
                       hint: const Text('Selecione um Médico'),
-                      initialValue: medicoSelecionado,
+                      value: medicoSelecionado,
                       items: medicosFiltrados.map((m) => DropdownMenuItem(value: m, child: Text(m.nome))).toList(),
                       onChanged: (novo) => ref.read(formMedicoProvider.notifier).state = novo,
                     );
@@ -104,7 +121,7 @@ class CadastroConsultaPage extends ConsumerWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.calendar_today),
-                        label: Text("${dataHora.day}/${dataHora.month}/${dataHora.year}"),
+                        label: Text("${dataHora.day.toString().padLeft(2, '0')}/${dataHora.month.toString().padLeft(2, '0')}/${dataHora.year}"),
                         onPressed: () async {
                           final data = await showDatePicker(
                             context: context,
@@ -149,7 +166,6 @@ class CadastroConsultaPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // BOTÃO DE GUARDAR
                 SizedBox(
                   height: 50,
                   child: ElevatedButton(

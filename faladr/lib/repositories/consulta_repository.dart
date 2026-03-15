@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:faladr_shared/faladr_shared.dart';
-import '../core/api_config.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/dio_provider.dart';
 
 class ConsultaRepository {
-  final Dio _dio = Dio(); 
-  final String _baseUrl = '${ApiConfig.baseUrl}/consultas';
+  final Dio _dio;
+  
+  ConsultaRepository(this._dio);
 
   Future<List<ConsultaModel>> buscarConsultas() async {
     try {
-      final response = await _dio.get(_baseUrl);
+      final response = await _dio.get('/consultas');
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = response.data;
@@ -36,7 +38,7 @@ class ConsultaRepository {
   Future<bool> criarConsulta(ConsultaModel consulta) async {
     try {
       final response = await _dio.post(
-        _baseUrl,
+        '/consultas',
         data: consulta.toMap(), 
       );
 
@@ -63,3 +65,8 @@ class ConsultaRepository {
     }
   }
 }
+
+final consultaRepositoryProvider = Provider<ConsultaRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return ConsultaRepository(dio);
+});

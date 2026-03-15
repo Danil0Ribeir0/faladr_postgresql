@@ -9,7 +9,7 @@ Connection? _db;
 const _corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+  'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization, ngrok-skip-browser-warning',
 };
 
 Handler middleware(Handler handler) {

@@ -65,7 +65,7 @@ Future<Response> onRequest(RequestContext context) async {
           parameters: [medico.nome, medico.crm, medico.cpf, medico.dataNascimento],
         );
 
-        final novoId = result.first;
+        final novoId = result.first[0];
 
         for (var plano in medico.planos) {
           if (plano.id != null) {
