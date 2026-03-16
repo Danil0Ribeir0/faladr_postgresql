@@ -13,6 +13,7 @@ import '../routes/pacientes/[id].dart' as pacientes_$id;
 import '../routes/medicos/index.dart' as medicos_index;
 import '../routes/medicos/[id].dart' as medicos_$id;
 import '../routes/consultas/index.dart' as consultas_index;
+import '../routes/consultas/[id].dart' as consultas_$id;
 
 import '../routes/_middleware.dart' as middleware;
 
@@ -40,7 +41,7 @@ Handler buildRootHandler() {
 Handler buildConsultasHandler() {
   final pipeline = const Pipeline();
   final router = Router()
-    ..all('/', (context) => consultas_index.onRequest(context,));
+    ..all('/', (context) => consultas_index.onRequest(context,))..all('/<id>', (context,id,) => consultas_$id.onRequest(context,id,));
   return pipeline.addHandler(router);
 }
 

@@ -18,7 +18,7 @@ class CadastroConsultaPage extends ConsumerStatefulWidget {
 }
 
 class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
-  late final TextEditingController observacoesController;
+  final TextEditingController observacoesController = TextEditingController();
 
   @override
   void initState() {
@@ -26,12 +26,17 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.consultaParaEditar != null) {
         final consulta = widget.consultaParaEditar!;
-        
         ref.read(formPlanoProvider.notifier).state = consulta.plano;
         ref.read(formPacienteProvider.notifier).state = consulta.paciente;
         ref.read(formMedicoProvider.notifier).state = consulta.medico;
         ref.read(formDataProvider.notifier).state = consulta.dataHora;
         observacoesController.text = consulta.observacoes;
+      } else {
+        ref.invalidate(formPlanoProvider);
+        ref.invalidate(formPacienteProvider);
+        ref.invalidate(formMedicoProvider);
+        ref.invalidate(formDataProvider);
+        observacoesController.clear();
       }
     });
   }
@@ -40,6 +45,54 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
   void dispose() {
     observacoesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _excluirConsulta(BuildContext context, WidgetRef ref) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir Consulta'),
+        content: const Text('Tem certeza que deseja excluir esta consulta? Esta ação não pode ser desfeita.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    ref.read(salvandoConsultaProvider.notifier).state = true;
+
+    try {
+      final repository = ref.read(consultaRepositoryProvider);
+      
+      await repository.deletarConsulta(widget.consultaParaEditar!.id!);
+
+      ref.invalidate(listaConsultasProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Consulta excluída com sucesso!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao excluir: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      ref.read(salvandoConsultaProvider.notifier).state = false;
+    }
   }
 
   @override
@@ -57,9 +110,21 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Agendar Nova Consulta', style: TextStyle(color: Colors.white)),
+        title: Text(
+          widget.consultaParaEditar == null ? 'Agendar Nova Consulta' : 'Editar Consulta', 
+          style: const TextStyle(color: Colors.white)
+        ),
         backgroundColor: Colors.teal,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: widget.consultaParaEditar != null 
+          ? [
+              IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: 'Excluir Consulta',
+                onPressed: estaASalvar ? null : () => _excluirConsulta(context, ref),
+              ),
+            ] 
+          : null,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -80,8 +145,13 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
                     );
                   }).toList(),
                   onChanged: (novoId) {
-                    final objetoPlano = planos.firstWhere((p) => p.id == novoId);
-                    ref.read(formPlanoProvider.notifier).state = objetoPlano;
+                    if (novoId != null) {
+                      final objetoPlano = planos.firstWhere((p) => p.id == novoId);
+                      ref.read(formPlanoProvider.notifier).state = objetoPlano;
+                      
+                      ref.read(formPacienteProvider.notifier).state = null;
+                      ref.read(formMedicoProvider.notifier).state = null;
+                    }
                   },
                   validator: (value) => value == null ? 'Selecione um plano' : null,
                 ),
@@ -99,12 +169,20 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
                   data: (pacientes) {
                     final pacientesFiltrados = pacientes.where((p) => p.plano.id == planoSelecionado.id).toList();
 
-                    return DropdownButtonFormField<PacienteModel>(
+                    return DropdownButtonFormField<String>(
                       decoration: const InputDecoration(border: OutlineInputBorder()),
                       hint: const Text('Selecione um Paciente'),
-                      initialValue: pacienteSelecionado,
-                      items: pacientesFiltrados.map((p) => DropdownMenuItem(value: p, child: Text(p.nome))).toList(),
-                      onChanged: (novo) => ref.read(formPacienteProvider.notifier).state = novo,
+                      initialValue: pacienteSelecionado?.id,
+                      items: pacientesFiltrados.map((p) => DropdownMenuItem<String>(
+                        value: p.id,
+                        child: Text(p.nome),
+                      )).toList(),
+                      onChanged: (novoId) {
+                        if (novoId != null) {
+                          final objetoPaciente = pacientesFiltrados.firstWhere((p) => p.id == novoId);
+                          ref.read(formPacienteProvider.notifier).state = objetoPaciente;
+                        }
+                      },
                     );
                   },
                 ),
@@ -118,12 +196,20 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
                   data: (medicos) {
                     final medicosFiltrados = medicos.where((m) => m.planos.any((p) => p.id == planoSelecionado.id)).toList();
 
-                    return DropdownButtonFormField<MedicoModel>(
+                    return DropdownButtonFormField<String>(
                       decoration: const InputDecoration(border: OutlineInputBorder()),
                       hint: const Text('Selecione um Médico'),
-                      initialValue: medicoSelecionado,
-                      items: medicosFiltrados.map((m) => DropdownMenuItem(value: m, child: Text(m.nome))).toList(),
-                      onChanged: (novo) => ref.read(formMedicoProvider.notifier).state = novo,
+                      initialValue: medicoSelecionado?.id,
+                      items: medicosFiltrados.map((m) => DropdownMenuItem<String>(
+                        value: m.id,
+                        child: Text(m.nome),
+                      )).toList(),
+                      onChanged: (novoId) {
+                        if (novoId != null) {
+                          final objetoMedico = medicosFiltrados.firstWhere((m) => m.id == novoId);
+                          ref.read(formMedicoProvider.notifier).state = objetoMedico;
+                        }
+                      },
                     );
                   },
                 ),
@@ -196,17 +282,23 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
                       ref.read(salvandoConsultaProvider.notifier).state = true;
 
                       final novaConsulta = ConsultaModel(
+                        id: widget.consultaParaEditar?.id,
                         planoId: planoSelecionado.id!, 
                         pacienteId: pacienteSelecionado.id!,
                         medicoId: medicoSelecionado.id!,
                         dataHora: dataHora,
-                        status: 'Agendada',
+                        status: widget.consultaParaEditar?.status ?? 'Agendada',
                         observacoes: observacoesController.text,
                       );
 
                       try {
                         final repository = ref.read(consultaRepositoryProvider);
-                        await repository.criarConsulta(novaConsulta);
+                        
+                        if (widget.consultaParaEditar == null) {
+                          await repository.criarConsulta(novaConsulta); 
+                        } else {
+                          await repository.editarConsulta(novaConsulta); 
+                        }
                         
                         ref.invalidate(listaConsultasProvider);
                         
@@ -215,12 +307,22 @@ class _CadastroConsultaPageState extends ConsumerState<CadastroConsultaPage> {
                         ref.read(formMedicoProvider.notifier).state = null;
 
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Consulta agendada com sucesso!'), backgroundColor: Colors.green));
+                          final mensagemSucesso = widget.consultaParaEditar == null 
+                              ? 'Consulta agendada com sucesso!' 
+                              : 'Consulta atualizada com sucesso!';
+
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(mensagemSucesso), 
+                            backgroundColor: Colors.green
+                          ));
                           Navigator.pop(context);
                         }
                       } catch (e) {
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red));
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Erro: $e'), 
+                            backgroundColor: Colors.red
+                          ));
                         }
                       } finally {
                         ref.read(salvandoConsultaProvider.notifier).state = false;
