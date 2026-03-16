@@ -38,8 +38,11 @@ class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   Widget _buildSearchBar(WidgetRef ref) {
+    final indiceAtual = ref.watch(menuSelecionadoProvider);
+    final hint = indiceAtual == 0 ? 'Pesquisar...' : 'Buscar paciente ou médico...';
+
     return SearchBar(
-      hintText: 'Pesquisar...',
+      hintText: hint,
       leading: const Icon(Icons.search, color: Colors.grey),
       elevation: const WidgetStatePropertyAll(1.0),
       backgroundColor: const WidgetStatePropertyAll(Colors.white),
@@ -100,16 +103,7 @@ class DashboardPage extends ConsumerWidget {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 700),
-                  child: indiceAtual == 0 
-                      ? _buildSearchBar(ref) 
-                      : const Text(
-                          'Consultas', 
-                          style: TextStyle(
-                            color: Colors.white, 
-                            fontSize: 22, 
-                            fontWeight: FontWeight.bold
-                          )
-                        ),
+                  child: _buildSearchBar(ref),
                 ),
               ),
             ),
@@ -130,6 +124,7 @@ class DashboardPage extends ConsumerWidget {
               title: const Text('Dashboard Principal'),
               selected: indiceAtual == 0,
               onTap: () {
+                ref.read(termoBuscaProvider.notifier).state = '';
                 ref.read(menuSelecionadoProvider.notifier).state = 0;
                 Navigator.pop(context);
               },
@@ -139,6 +134,7 @@ class DashboardPage extends ConsumerWidget {
               title: const Text('Consultas'),
               selected: indiceAtual == 1,
               onTap: () {
+                ref.read(termoBuscaProvider.notifier).state = '';
                 ref.read(menuSelecionadoProvider.notifier).state = 1;
                 Navigator.pop(context);
               },
@@ -151,12 +147,6 @@ class DashboardPage extends ConsumerWidget {
         children: [
           Column(
             children: [
-              if (isMobile)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-                  child: _buildSearchBar(ref),
-                ),
-
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isMobile ? 8.0 : 40.0, 

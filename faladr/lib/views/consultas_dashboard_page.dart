@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controller/consulta_controller.dart';
 import 'cadastro_consulta_page.dart';
+import 'dashboard_page.dart';
 
 class ConsultasDashboardPage extends ConsumerWidget {
   const ConsultasDashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final estadoConsultas = ref.watch(listaConsultasProvider); 
+    final estadoConsultas = ref.watch(listaConsultasProvider);
+    final termoBusca = ref.watch(termoBuscaProvider).toLowerCase();
     final larguraTela = MediaQuery.sizeOf(context).width;
 
     int crossAxisCount = 1;
@@ -38,12 +40,23 @@ class ConsultasDashboardPage extends ConsumerWidget {
           ),
         ),
         data: (consultas) {
-          if (consultas.isEmpty) {
-            return const Center(
+          final consultasFiltradas = termoBusca.isEmpty 
+              ? consultas 
+              : consultas.where((consulta) {
+                  final nomePaciente = consulta.paciente?.nome.toLowerCase() ?? '';
+                  final nomeMedico = consulta.medico?.nome.toLowerCase() ?? '';
+                  
+                  return nomePaciente.contains(termoBusca) || nomeMedico.contains(termoBusca);
+                }).toList();
+
+          if (consultasFiltradas.isEmpty) {
+            return Center(
               child: Text(
-                'Nenhuma consulta agendada ainda.\nClique no botão + para adicionar!',
+                termoBusca.isEmpty 
+                  ? 'Nenhuma consulta agendada ainda.\nClique no botão + para adicionar!'
+                  : 'Nenhuma consulta encontrada para "$termoBusca".',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
             );
           }
@@ -56,9 +69,9 @@ class ConsultasDashboardPage extends ConsumerWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
-            itemCount: consultas.length,
+            itemCount: consultasFiltradas.length,
             itemBuilder: (context, index) {
-              final consulta = consultas[index];
+              final consulta = consultasFiltradas[index];
               final dataFormatada = "${consulta.dataHora.day.toString().padLeft(2, '0')}/${consulta.dataHora.month.toString().padLeft(2, '0')}/${consulta.dataHora.year}";
               final horaFormatada = "${consulta.dataHora.hour.toString().padLeft(2, '0')}:${consulta.dataHora.minute.toString().padLeft(2, '0')}";
 
