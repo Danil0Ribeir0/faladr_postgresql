@@ -2,8 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:faladr_shared/faladr_shared.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/dio_provider.dart';
+import '../core/exceptions/repository_error_handler.dart';
 
-class ConsultaRepository {
+class ConsultaRepository with RepositoryErrorHandler{
   final Dio _dio;
   
   ConsultaRepository(this._dio);
@@ -12,101 +13,52 @@ class ConsultaRepository {
     try {
       final response = await _dio.get('/consultas');
 
-      if (response.statusCode == 200) {
+      if (response.data != null) {
         final List<dynamic> jsonData = response.data;
         return jsonData.map((item) => ConsultaModel.fromMap(item)).toList();
-      } else {
-        throw Exception('Falha ao carregar as consultas. Código: ${response.statusCode}');
       }
+      return [];
     } on DioException catch (e) {
-      String mensagemErro = 'Erro de conexão';
-      
-      if (e.response?.data != null) {
-        if (e.response!.data is Map) {
-          mensagemErro = e.response!.data['error'] ?? 'Erro no servidor (500)';
-        } else {
-          mensagemErro = e.response!.data.toString();
-          mensagemErro = mensagemErro.replaceAll('{"error":"', '').replaceAll('"}', ''); 
-        }
+      if (e.response?.statusCode == 409) {
+        throw RepositoryException('Já existe uma consulta marcada para este horário. Verifique os dados.');
       }
-      throw Exception(mensagemErro);
+      handleError(e, 'Erro ao carregar as consultas');
     } catch (e) {
-      throw Exception('Erro ao processar as consultas: $e');
+      handleError(e, 'Erro inesperado ao carregar as consultas'); 
     }
   }
 
   Future<bool> criarConsulta(ConsultaModel consulta) async {
     try {
-      final response = await _dio.post(
-        '/consultas',
-        data: consulta.toMap(), 
-      );
+      await _dio.post('/consultas', data: consulta.toMap());
 
-      if (response.statusCode == 201) {
-        return true;
-      } else {
-        return false;
-      }
-    } on DioException catch (e) {
-      String mensagemErro = _tratarErroDio(e);
-      throw Exception(mensagemErro);
+      return true;
     } catch (e) {
-      throw Exception('Erro ao agendar consulta: $e');
+      handleError(e, 'Erro ao agendar consulta');
     }
   }
 
   Future<bool> editarConsulta(ConsultaModel consulta) async {
     try {
-      final response = await _dio.put(
-        '/consultas/${consulta.id}',
-        data: consulta.toMap(),
-      );
+      await _dio.put('/consultas/${consulta.id}', data: consulta.toMap());
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else {
-        return false;
-      }
-    } on DioException catch (e) {
-      String mensagemErro = _tratarErroDio(e);
-      throw Exception(mensagemErro);
+      return true;
     } catch (e) {
-      throw Exception('Erro ao atualizar consulta: $e');
+      handleError(e, 'Erro ao atualizar consulta');
     }
   }
 
   Future<bool> deletarConsulta(String id) async {
     try {
-      final response = await _dio.delete('/consultas/$id');
+      await _dio.delete('/consultas/$id');
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else {
-        return false;
-      }
-    } on DioException catch (e) {
-      String mensagemErro = _tratarErroDio(e);
-      throw Exception(mensagemErro);
+      return true;
     } catch (e) {
-      throw Exception('Erro ao deletar consulta: $e');
+      handleError(e, 'Erro ao deletar consulta');
     }
-  }
-
-  String _tratarErroDio(DioException e) {
-    String mensagemErro = 'Erro desconhecido';
-    if (e.response?.data != null) {
-      if (e.response!.data is Map) {
-        mensagemErro = e.response!.data['error'] ?? 'Erro no servidor';
-      } else {
-        mensagemErro = e.response!.data.toString();
-        mensagemErro = mensagemErro.replaceAll('{"error":"', '').replaceAll('"}', ''); 
-      }
-    }
-    return mensagemErro;
   }
 }
 
 final consultaRepositoryProvider = Provider<ConsultaRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-  return ConsultaRepository(dio);
+  return ConsultaRepository(ref.watch(dioProvider));
 });

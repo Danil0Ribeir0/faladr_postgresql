@@ -38,8 +38,7 @@ class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   Widget _buildSearchBar(WidgetRef ref) {
-    final indiceAtual = ref.watch(menuSelecionadoProvider);
-    final hint = indiceAtual == 0 ? 'Pesquisar...' : 'Buscar paciente ou médico...';
+    final hint = 'Pesquisar...';
 
     return SearchBar(
       hintText: hint,
