@@ -231,6 +231,7 @@ class DashboardPage extends ConsumerWidget {
                       : 'Novo Plano',
             ),
             icon: const Icon(Icons.add),
+            heroTag: null,
           ),
     );
   }
