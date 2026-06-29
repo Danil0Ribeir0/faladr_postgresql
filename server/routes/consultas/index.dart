@@ -57,7 +57,7 @@ Future<Response> onRequest(RequestContext context) async {
 
       final validacaoPlano = await db.execute(
         r'SELECT 1 FROM medico_planos WHERE medico_id = $1::uuid AND plano_id = $2::uuid',
-        parameters: [consulta.medicoId, consulta.planoId],
+        parameters: [consulta.medicoId, consulta.planoId]
       );
 
       if (validacaoPlano.isEmpty) {
@@ -65,6 +65,24 @@ Future<Response> onRequest(RequestContext context) async {
           statusCode: 400, 
           body: {'error': 'Operação não permitida. O médico selecionado não atende a este plano.'}
         );
+      }
+
+      final validacaoMedico = await db.execute(
+        r'SELECT 1 FROM consultas WHERE medico_id = $1::uuid AND data_hora = $2::timestamp LIMIT 1',
+        parameters: [consulta.medicoId, consulta.dataHora],
+      );
+
+      if (validacaoMedico.isNotEmpty) {
+        return Response.json(statusCode: 409, body: {'error': 'O médico já possui consulta neste horário.'});
+      }
+
+      final validacaoPaciente = await db.execute(
+        r'SELECT 1 FROM consultas WHERE paciente_id = $1::uuid AND data_hora = $2::timestamp LIMIT 1',
+        parameters: [consulta.pacienteId, consulta.dataHora],
+      );
+
+      if (validacaoPaciente.isNotEmpty) {
+        return Response.json(statusCode: 409, body: {'error': 'O paciente já possui consulta neste horário.'});
       }
 
       final result = await db.execute(

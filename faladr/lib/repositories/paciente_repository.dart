@@ -2,27 +2,23 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
 import '../core/dio_provider.dart';
+import '../core/exceptions/repository_error_handler.dart';
 
-class PacienteRepository {
+class PacienteRepository with RepositoryErrorHandler{
   final Dio _dio;
 
   PacienteRepository(this._dio);
 
   Future<void> criarPaciente(PacienteModel paciente) async {
     try {
-      final response = await _dio.post(
-        '/pacientes',
-        data: paciente.toMap(),
-      );
-      
-      if (response.statusCode != 201) {
-        throw Exception('Erro ao cadastrar paciente');
-      }
+      await _dio.post('/pacientes', data: paciente.toMap());
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
         throw Exception('CPF já cadastrado.');
       }
-      throw Exception('Erro de rede ao cadastrar: ${e.message}');
+      handleError(e, 'Erro ao cadastrar paciente');
+    } catch (e) {
+      handleError(e, 'Erro inesperado ao cadastrar paciente');
     }
   }
 
@@ -30,28 +26,24 @@ class PacienteRepository {
     try {
       final response = await _dio.get('/pacientes');
       
-      if (response.statusCode == 200) {
+      if (response.data != null) {
         final data = response.data as List;
         return data.map((json) => PacienteModel.fromMap(json)).toList();
       }
       return [];
-    } on DioException catch (e) {
-      throw Exception('Erro ao buscar pacientes: ${e.message}');
+    } catch (e) {
+      handleError(e, 'Erro ao buscar a lista de pacientes');
     }
   }
 
   Future<void> atualizarPaciente(PacienteModel paciente) async {
-    if (paciente.id == null) throw Exception('ID necessário para atualizar');
+    if (paciente.id == null) throw RepositoryException('ID necessário para atualizar');
 
     try {
-      final response = await _dio.put(
+      await _dio.put(
         '/pacientes/${paciente.id}',
         data: paciente.toMap(),
       );
-
-      if (response.statusCode != 200) {
-        throw Exception('Erro ao atualizar paciente');
-      }
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
         throw Exception('Paciente não encontrado no banco.');
@@ -59,25 +51,21 @@ class PacienteRepository {
       if (e.response?.statusCode == 409) {
         throw Exception('Este CPF já está a ser utilizado por outro paciente.');
       }
-      throw Exception('Erro de rede ao atualizar: ${e.message}');
+      handleError(e, 'Erro ao atualizar paciente');
+    } catch (e) {
+      handleError(e, 'Erro inesperado ao atualizar paciente');
     }
   }
 
   Future<void> deletarPaciente(String id) async {
     try {
-      final response = await _dio.delete('/pacientes/$id');
-      
-      if (response.statusCode != 204 && response.statusCode != 200) {
-        throw Exception('Erro ao deletar paciente');
-      }
-    } on DioException catch (e) {
-      throw Exception('Erro de rede ao deletar: ${e.message}');
+      await _dio.delete('/pacientes/$id');
+    } catch (e) {
+      handleError(e, 'Erro ao deletar paciente');
     }
   }
 }
 
-final pacienteRepositoryProvider = Provider<PacienteRepository>((ref) {
-  final dio = ref.watch(dioProvider); 
-  
-  return PacienteRepository(dio);
+final pacienteRepositoryProvider = Provider<PacienteRepository>((ref) { 
+  return PacienteRepository(ref.watch(dioProvider));
 });

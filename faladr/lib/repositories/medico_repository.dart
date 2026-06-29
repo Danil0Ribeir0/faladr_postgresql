@@ -2,37 +2,23 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:faladr_shared/faladr_shared.dart';
 import '../core/dio_provider.dart';
+import '../core/exceptions/repository_error_handler.dart';
 
-class MedicoRepository {
+class MedicoRepository with RepositoryErrorHandler{
   final Dio _dio;
 
   MedicoRepository(this._dio);
 
-  String _extrairErroBackend(DioException e, String mensagemPadrao) {
-    try {
-      if (e.response?.data != null && e.response?.data is Map) {
-        final mensagem = e.response?.data['error'];
-        if (mensagem != null && mensagem.toString().isNotEmpty) {
-          return mensagem;
-        }
-      }
-    } catch (_) {}
-    
-    if (e.response?.statusCode == 409) return 'Já existe um médico cadastrado com este CPF ou CRM. Verifique os dados.';
-    if (e.response?.statusCode == 404) return 'Registro não encontrado.';
-    
-    return mensagemPadrao;
-  }
-
   Future<void> criarMedico(MedicoModel medico) async {
     try {
-      final response = await _dio.post('/medicos', data: medico.toMap());
-      
-      if (response.statusCode != 201) {
-        throw Exception('Erro ao cadastrar médico');
-      }
+      await _dio.post('/medicos', data: medico.toMap());
     } on DioException catch (e) {
-      throw Exception(_extrairErroBackend(e, 'Erro de rede ao cadastrar médico: ${e.message}'));
+      if (e.response?.statusCode == 409) {
+        throw RepositoryException('Já existe um médico cadastrado com este CPF ou CRM. Verifique os dados.');
+      }
+      handleError(e, 'Erro ao cadastrar médico');
+    } catch (e) {
+      handleError(e, 'Erro inesperado ao cadastrar médico');
     }
   }
 
@@ -40,48 +26,46 @@ class MedicoRepository {
     try {
       final response = await _dio.get('/medicos');
       
-      if (response.statusCode == 200) {
+      if (response.data != null) {
         final data = response.data as List;
         return data.map((json) => MedicoModel.fromMap(json)).toList();
       }
       return [];
-    } on DioException catch (e) {
-      throw Exception(_extrairErroBackend(e, 'Erro ao buscar médicos: ${e.message}'));
+    } catch (e) {
+      handleError(e, 'Erro ao buscar a lista de médicos');
     }
   }
 
   Future<void> atualizarMedico(MedicoModel medico) async {
-    if (medico.id == null) throw Exception('ID é obrigatório para atualização');
+    if (medico.id == null) throw RepositoryException('ID é obrigatório para atualização');
 
     try {
-      final response = await _dio.put(
+      await _dio.put(
         '/medicos/${medico.id}',
         data: medico.toMap(),
       );
-
-      if (response.statusCode != 200) {
-        throw Exception('Erro ao atualizar médico');
-      }
     } on DioException catch (e) {
-      throw Exception(_extrairErroBackend(e, 'Erro de rede ao atualizar médico: ${e.message}'));
+      if (e.response?.statusCode == 404) {
+        throw RepositoryException('Registro não encontrado.');
+      }
+      if (e.response?.statusCode == 409) {
+        throw RepositoryException('Já existe um médico cadastrado com este CPF ou CRM. Verifique os dados.');
+      }
+      handleError(e, 'Erro ao atualizar médico');
+    } catch (e) {
+      handleError(e, 'Erro inesperado ao atuaizar médico');
     }
   }
 
   Future<void> deletarMedico(String id) async {
     try {
-      final response = await _dio.delete('/medicos/$id');
-      
-      if (response.statusCode != 204 && response.statusCode != 200) {
-        throw Exception('Erro ao deletar médico');
-      }
-    } on DioException catch (e) {
-      throw Exception(_extrairErroBackend(e, 'Erro de rede ao deletar médico: ${e.message}'));
+      await _dio.delete('/medicos/$id');
+    } catch (e) {
+      handleError(e, 'Erro ao deletar médico');
     }
   }
 }
 
-final medicoRepositoryProvider = Provider<MedicoRepository>((ref) {
-  final dio = ref.watch(dioProvider); 
-  
-  return MedicoRepository(dio);
+final medicoRepositoryProvider = Provider<MedicoRepository>((ref) { 
+  return MedicoRepository(ref.watch(dioProvider));
 });
