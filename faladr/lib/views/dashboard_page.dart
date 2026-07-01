@@ -9,6 +9,7 @@ import '../controller/plano_controller.dart';
 import '../views/cadastro_medico_page.dart';
 import 'package:faladr_shared/faladr_shared.dart';
 import 'consultas_dashboard_page.dart';
+import 'relatorios_dashboard_page.dart';
 
 final menuSelecionadoProvider = StateProvider<int>((ref) => 0);
 
@@ -138,6 +139,16 @@ class DashboardPage extends ConsumerWidget {
                 Navigator.pop(context);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart),
+              title: const Text('Relatórios'),
+              selected: indiceAtual == 2,
+              onTap: () {
+                ref.read(termoBuscaProvider.notifier).state = '';
+                ref.read(menuSelecionadoProvider.notifier).state = 2;
+                Navigator.pop(context);
+              }
+            )
           ],
         ),
       ),
@@ -200,12 +211,12 @@ class DashboardPage extends ConsumerWidget {
               ),
             ],
           ),
-
           const ConsultasDashboardPage(),
+          const RelatoriosDashboardPage(),
         ],
       ),
 
-      floatingActionButton: indiceAtual == 1 
+      floatingActionButton: (indiceAtual == 1 || indiceAtual == 2)
         ? null 
         : FloatingActionButton.extended(
             onPressed: () {

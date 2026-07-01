@@ -9,7 +9,7 @@ class ConsultaRepository with RepositoryErrorHandler{
   
   ConsultaRepository(this._dio);
 
-  Future<List<ConsultaModel>> buscarConsultas() async {
+  Future<List<ConsultaModel>> getConsultas() async {
     try {
       final response = await _dio.get('/consultas');
 

@@ -5,5 +5,5 @@ import '../repositories/consulta_repository.dart';
 final listaConsultasProvider = FutureProvider<List<ConsultaModel>>((ref) async {
   final repository = ref.watch(consultaRepositoryProvider);
   
-  return repository.buscarConsultas(); 
+  return repository.getConsultas();
 });
