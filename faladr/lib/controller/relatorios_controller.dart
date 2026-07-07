@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/paciente_repository.dart';
 import '../repositories/medico_repository.dart';
 import '../repositories/consulta_repository.dart';
+import '../repositories/relatorio_repository.dart';
+import 'package:faladr_shared/relatorio_model.dart';
 
 class RelatoriosState {
   final Map<String, int> pacientesPorPlano;
@@ -152,6 +154,49 @@ class RelatoriosController extends StateNotifier<RelatoriosState> {
     }
     
     return 'Formato Inválido';
+  }
+
+  Future<void> salvarSnapshotRelatorio() async {
+    try {
+      final repository = ref.read(relatorioRepositoryProvider);
+      
+      final dataAtual = DateTime.now();
+
+      final dia = dataAtual.day.toString().padLeft(2, '0');
+      final mes = dataAtual.month.toString().padLeft(2, '0');
+      final ano = dataAtual.year;
+      final hora = dataAtual.hour.toString().padLeft(2, '0');
+      final minuto = dataAtual.minute.toString().padLeft(2, '0');
+      
+      final tituloDinamico = 'Fechamento Consolidado - $dia/$mes/$ano às $hora:$minuto';
+
+      final relatorio = RelatorioModel(
+        titulo: tituloDinamico, 
+        tipo: 'MANUAL',
+        dataGeracao: dataAtual,
+        dados: {
+          'pacientes': {
+            'porPlano': state.pacientesPorPlano,
+            'porFaixaEtaria': state.pacientesPorFaixaEtaria,
+          },
+          'medicos': {
+            'porEstado': state.medicosPorEstado,
+            'porFaixaEtaria': state.medicosPorFaixaEtaria,
+            'porPlano': state.medicosPorPlano,
+          },
+          'consultas': {
+            'porMedico': state.consultasPorMedico,
+            'porPaciente': state.consultasPorPaciente,
+            'porPlano': state.consultasPorPlano,
+          }
+        },
+      );
+
+      await repository.salvar(relatorio);
+      
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 }
 

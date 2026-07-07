@@ -212,7 +212,7 @@ class DashboardPage extends ConsumerWidget {
             ],
           ),
           const ConsultasDashboardPage(),
-          const RelatoriosDashboardPage(),
+          const RelatoriosPage(),
         ],
       ),
 

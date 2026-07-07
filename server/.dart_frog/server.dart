@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 
 import '../main.dart' as entrypoint;
+import '../routes/relatorios/index.dart' as relatorios_index;
 import '../routes/planos/index.dart' as planos_index;
 import '../routes/planos/[id].dart' as planos_$id;
 import '../routes/pacientes/index.dart' as pacientes_index;
@@ -34,7 +35,8 @@ Handler buildRootHandler() {
     ..mount('/consultas', (context) => buildConsultasHandler()(context))
     ..mount('/medicos', (context) => buildMedicosHandler()(context))
     ..mount('/pacientes', (context) => buildPacientesHandler()(context))
-    ..mount('/planos', (context) => buildPlanosHandler()(context));
+    ..mount('/planos', (context) => buildPlanosHandler()(context))
+    ..mount('/relatorios', (context) => buildRelatoriosHandler()(context));
   return pipeline.addHandler(router);
 }
 
@@ -63,6 +65,13 @@ Handler buildPlanosHandler() {
   final pipeline = const Pipeline();
   final router = Router()
     ..all('/', (context) => planos_index.onRequest(context,))..all('/<id>', (context,id,) => planos_$id.onRequest(context,id,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildRelatoriosHandler() {
+  final pipeline = const Pipeline();
+  final router = Router()
+    ..all('/', (context) => relatorios_index.onRequest(context,));
   return pipeline.addHandler(router);
 }
 
