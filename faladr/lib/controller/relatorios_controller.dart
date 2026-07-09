@@ -144,11 +144,8 @@ class RelatoriosController extends StateNotifier<RelatoriosState> {
   }
 
   String _extrairEstadoDoCRM(String crm) {
-    if (crm.isEmpty || !crm.contains('/')) {
-      return 'Não informado';
-    }
-    
     final partes = crm.split('/');
+    
     if (partes.length == 2) {
       return partes[1].trim().toUpperCase(); 
     }
@@ -199,4 +196,3 @@ class RelatoriosController extends StateNotifier<RelatoriosState> {
     }
   }
 }
-

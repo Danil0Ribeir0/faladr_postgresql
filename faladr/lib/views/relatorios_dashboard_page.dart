@@ -1,7 +1,6 @@
-import 'dart:math'; // Necessário para calcular os ângulos do gráfico de pizza
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// Substitua pelo caminho correto do seu controller
 import '../controller/relatorios_controller.dart';
 
 final selecaoPacientesProvider = StateProvider.autoDispose<int>((ref) => 0);
@@ -366,14 +365,12 @@ class _LinhaPainter extends CustomPainter {
       
       canvas.drawCircle(Offset(x, y), 5, paintPonto);
 
-      // Texto do Eixo X (Nome)
       final textSpanX = TextSpan(text: chaves[i], style: const TextStyle(color: Colors.black54, fontSize: 10));
       final textPainterX = TextPainter(text: textSpanX, textDirection: TextDirection.ltr, textAlign: TextAlign.center);
       textPainterX.layout(maxWidth: stepX > 50 ? stepX : 50);
       textPainterX.paint(canvas, Offset(x - (textPainterX.width / 2), size.height - paddingBottom + 10));
 
-      // Texto do Valor (Em cima do ponto)
-      if (progress > 0.8) { // Mostra o valor só no final da animação
+      if (progress > 0.8) {
         final textSpanY = TextSpan(text: valores[i].toString(), style: const TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.bold));
         final textPainterY = TextPainter(text: textSpanY, textDirection: TextDirection.ltr);
         textPainterY.layout();
@@ -455,7 +452,7 @@ class _PizzaPainter extends CustomPainter {
     final double radius = (size.width < size.height ? size.width : size.height) / 2;
     final Rect rect = Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: radius * 0.9);
     
-    double startAngle = -pi / 2; // Começa no topo
+    double startAngle = -pi / 2;
     final cores = [Colors.teal, Colors.amber, Colors.blue.shade400, Colors.red.shade400, Colors.purple.shade400, Colors.orange];
     int corIndex = 0;
 
