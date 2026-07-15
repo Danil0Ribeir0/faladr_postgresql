@@ -14,7 +14,6 @@ Future<Response> onRequest(RequestContext context) async {
           c.id, c.plano_id, c.medico_id, c.paciente_id, c.data_hora, c.status, c.observacoes,
           row_to_json(pl) as plano,
           row_to_json(m) as medico,
-          -- A MÁGICA ACONTECE AQUI: Fundimos o JSON do Paciente com o JSON do Plano dele!
           (row_to_json(p)::jsonb || jsonb_build_object('plano', row_to_json(pl)::jsonb)) as paciente
         FROM consultas c
         JOIN planos pl ON c.plano_id = pl.id

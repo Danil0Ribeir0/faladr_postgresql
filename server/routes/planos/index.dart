@@ -13,7 +13,6 @@ Future<Response> onRequest(RequestContext context) async {
           p.id, 
           p.nome, 
           p.ativo,
-          -- CORREÇÃO: Agora contamos a partir da tabela intermediária medico_planos!
           (SELECT COUNT(*) FROM medico_planos mp WHERE mp.plano_id = p.id) as quantidade_medicos,
           (SELECT COUNT(*) FROM pacientes pac WHERE pac.plano_id = p.id) as quantidade_pacientes
         FROM planos p 
